@@ -379,7 +379,7 @@ def checkBam(bedFile, sSite, sample):
 	#if we see a change from N->M or M->N at competitor and partner positions, then this is also a beta2 read - and we'll need to subtract from our beta2counts
 	beta1_count = 0
 	alphaBeta_count = 0
-	hardBeta2_count = 0
+	SimpleBeta2_count = 0
 	targetPos = sSite.getPos()
 	#get list of partner and competitor positions
 	competitors = sSite.getCompetitorPos()
@@ -415,7 +415,7 @@ def checkBam(bedFile, sSite, sample):
 				alpha_read = False
 				beta1_read = False
 				compSplicing_read = False
-				hardBeta2_read = False
+				SimpleBeta2_read = False
 				currentPos = int(leftBound)
 				#Check if we see mapping directly across the splice site of interest (beta1)
 				for idx, d in enumerate(digits):
@@ -456,7 +456,7 @@ def checkBam(bedFile, sSite, sample):
 						#	if rSite in competitors or rSite in partners:
 						#		compSplicing = True
 						#		if targetPos > lSite and targetPos < rSite: #in the case the target site has been spliced out
-						#			hardBeta2_read = True
+						#			SimpleBeta2_read = True
 						if rSite in competitors:
 							if lSite in partners:
 								compSplicing = True
@@ -467,11 +467,11 @@ def checkBam(bedFile, sSite, sample):
 								cPos = lSite
 						if compSplicing == True:
 							if targetPos > lSite and targetPos < rSite: #in the case the target site has been spliced out
-								hardBeta2_read = True
+								SimpleBeta2_read = True
 
 
 				if beta1_read == True and compSplicing == True: # in case we see both non-usage of the site and competitive splicing
-					hardBeta2_read = True
+					SimpleBeta2_read = True
 
 				#Update Values for this Site - according to this read
 				if (alpha_read == True and compSplicing == True): # in case we see usage of the site and 'competitive splicing' also
@@ -485,28 +485,28 @@ def checkBam(bedFile, sSite, sample):
 						if p != partnerUsed: #don't count the alphaBeta read against the partner used by the target site
 							sSite.addPartnerBeta2DoubleCount(p, 1, sample)
 
-				elif hardBeta2_read == True: # if it's a hard beta2 read count - we need to store which partner they came from, so the weight isn't applied to those reads
-					#make a set of partners which show hard competitions
+				elif SimpleBeta2_read == True: # if it's a Simple beta2 read count - we need to store which partner they came from, so the weight isn't applied to those reads
+					#make a set of partners which show Simple competitions
 					sP = set(partners)
 					sS = set(spliceSites)
 					sI = sP.intersection(sS)
-					#store a hard count for the site, and record a double count read to buffer against the beta2 count later (which is blind to the fact this read is actually a hardbeta2 read).
+					#store a Simple count for the site, and record a double count read to buffer against the beta2 count later (which is blind to the fact this read is actually a Simplebeta2 read).
 					for p in sI:
 						sSite.addPartnerBeta2DoubleCount(p, 1, sample)
-					sSite.addBeta2HardCount(1, sample)
+					sSite.addBeta2SimpleCount(1, sample)
 
 					#add competitor to site competitor list (redundant effort for 'process' subcommand, but needed for 'combine' subcommand)
 					if compSplicing == True:
 						sSite.addCompetitorPos(cPos)
 
 
-				elif beta1_read == True and hardBeta2_read == False: # finally, if it's not hardBeta2, add read as a beta1 count
+				elif beta1_read == True and SimpleBeta2_read == False: # finally, if it's not SimpleBeta2, add read as a beta1 count
 					sSite.addBeta1Count(1 , sample) # add counts for reads showing beta1 non-usage, and naught else
 					#print('Here')
 					#print(partners,competitors)
 	#update values for this site
 
-	sSite.addBeta2HardCount(hardBeta2_count, sample) #tuck these away for later, we won't weight these counts because they are direct evidence of non-usage
+	sSite.addBeta2SimpleCount(SimpleBeta2_count, sample) #tuck these away for later, we won't weight these counts because they are direct evidence of non-usage
 
 def trueDivCatchZero(array1, array2):
 	"""
@@ -524,10 +524,10 @@ def findBeta2Counts(site, numSamps):
 	#find the beta2 counts for this site
 	Partners= site.getPartners() # array of Site objects the current site is known to partner with
 	PartnerCounts = site.getPartnerCounts() #dictionary of known partners and alpha counts shared with the target site
-	Beta2HardCounts = site.getBeta2HardCounts() # array of hard beta2 counts for the target site
+	Beta2SimpleCounts = site.getBeta2SimpleCounts() # array of Simple beta2 counts for the target site
 	PartnerBetaDoubleCounts = site.getPartnerBeta2DoubleCounts() # dictionary of read counts for each partner where we know the site was used despite competetive splicing
-	beta2SoftCounts = [0]*numSamps
-	beta2SoftWeighted = [0.00]*numSamps
+	beta2CrypticCounts = [0]*numSamps
+	beta2CrypticWeighted = [0.00]*numSamps
 	#total alpha reads of the target site
 	TotalAlphas = site.getAlphaCounts()
 	for i, pSite in enumerate(Partners):
@@ -544,31 +544,31 @@ def findBeta2Counts(site, numSamps):
 			#adjust for double-counter reads
 			b2 = map(sub, b2, doubleCounts)
 
-		#tally soft beta 2 counts
-		beta2SoftCounts = list(map(add, beta2SoftCounts, b2))
+		#tally Cryptic beta 2 counts
+		beta2CrypticCounts = list(map(add, beta2CrypticCounts, b2))
 		#calculate weights for the given partner
 		pWeights = trueDivCatchZero(pCounts, TotalAlphas)
 		#tally weighted beta2 counts
 		for i in range(0,numSamps):
 			b2[i] = b2[i]*pWeights[i]
-		beta2SoftWeighted = list(map(add, beta2SoftWeighted, b2))
+		beta2CrypticWeighted = list(map(add, beta2CrypticWeighted, b2))
 
-	#add Beta2Hard Counts
-	beta2Weighted = map(add, beta2SoftWeighted, Beta2HardCounts)
 	#update values for this site
-	site.addBeta2SoftCounts(beta2SoftCounts)
-	site.updateBeta2Weighted(beta2Weighted)
+	site.addBeta2CrypticCounts(beta2CrypticCounts)
+	site.updateBeta2Weighted(beta2CrypticWeighted)
 
 
 def calculateSSE(site):
 	alpha = site.getAlphaCounts()
 	beta1 = site.getBeta1Counts()
+	beta2Simple = site.getBeta2SimpleCounts()
 	beta2w = site.getBeta2WeightedCounts()
-	betas = map(add, beta1, beta2w)
+	betas = map(add, beta1, beta2Simple)
+	betas = map(add, betas, beta2w)
 	denominator = map(add, alpha, betas)
 	site.setSSEs(trueDivCatchZero(list(alpha), list(denominator)))
 
-
+'''
 def outputData(outputFile, qChrom, minReads, inGene, Titles):
 
         filtered = open(str(outputFile+"."+str(inGene)+"_filtered.txt"),'w+')
@@ -583,11 +583,11 @@ def outputData(outputFile, qChrom, minReads, inGene, Titles):
                                                 filtered.write(str(site.getChromosome())+":"+str(site.getPos())+"\t"+str(t)+"\t"+str(site.getSE(fileIndex))+"\t"+str(site.getAllCount(fileIndex))+"\n")
                                 out.close()
         filtered.close()
-
+'''
 def outputBedFile(outputPath):
 	outBed = open(outputPath+".SpliSER.bed","w+")
 	#Write the header line
-	outBed.write("Region\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Hard_count\tbeta2Soft_count\tbeta2_weighted\tPartners\tCompetitors\n")
+	outBed.write("Region\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2_weighted\tPartners\tCompetitors\n")
 	for c_index, c in enumerate(chrom_index):
 		for site in site2D_array[c_index]:
 			outBed.write(str(site.getChromosome())+"\t")
@@ -596,8 +596,8 @@ def outputBedFile(outputPath):
 			outBed.write("{0:.3f}\t".format(site.getSSE(0)))
 			outBed.write(str(site.getAlphaCount(0))+"\t")
 			outBed.write(str(site.getBeta1Count(0))+"\t")
-			outBed.write(str(site.getBeta2HardCount(0))+"\t")
-			outBed.write(str(site.getBeta2SoftCount(0))+"\t")
+			outBed.write(str(site.getBeta2SimpleCount(0))+"\t")
+			outBed.write(str(site.getBeta2CrypticCount(0))+"\t")
 			outBed.write(str(site.getBeta2WeightedCount(0))+"\t")
 			outBed.write(str(site.getPartnerCount(0))+"\t")
 			outBed.write(str(site.getCompetitorPos())+"\n")
@@ -623,8 +623,6 @@ def processSites(inBAM, qChrom, sample = 0, numsamples = 1):
 		print("Processing region "+str(c))
 		if qChrom == c or qChrom =="All":
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
-				if idx%10000 == 0:
-					print("Processing Site "+str(idx))
 				#Go assign Beta 1 type reads from BAM file
 				checkBam(inBAM, site, sample)
 				#if this is the final iteration
@@ -665,16 +663,16 @@ def outputCombinedLines(outTSV, site, gene):
 		outTSV.write("{0:.3f}\t".format(site.getSSE(idx)))
 		outTSV.write(str(site.getAlphaCount(idx))+"\t")
 		outTSV.write(str(site.getBeta1Count(idx))+"\t")
-		outTSV.write(str(site.getBeta2HardCount(idx))+"\t")
-		outTSV.write(str(site.getBeta2SoftCount(idx))+"\t")
+		outTSV.write(str(site.getBeta2SimpleCount(idx))+"\t")
+		outTSV.write(str(site.getBeta2CrypticCount(idx))+"\t")
 		outTSV.write(str(site.getBeta2WeightedCount(idx))+"\t")
 		outTSV.write(str(site.getPartnerCount(idx))+"\t")
 		outTSV.write(str(site.getCompetitorPos())+"\n")
 
-def combineDeep(samplesFile, outputPath,firstChrom):
+def combine(samplesFile, outputPath,firstChrom):
 	print('Combining samples...')
 	outTSV = open(outputPath+".combined.tsv", 'w+')
-	outTSV.write("Sample\tRegion\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Hard_count\tbeta2Soft_count\tbeta2_weighted\tPartners\tCompetitors\n")
+	outTSV.write("Sample\tRegion\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2_weighted\tPartners\tCompetitors\n")
 	#Process the input paths file
 	samples = 0
 	bedPaths = [] # stores the absolute path to each SpliSER.bed file
@@ -725,6 +723,7 @@ def combineDeep(samplesFile, outputPath,firstChrom):
 		filledGap = False
 
 		for idx, iter in enumerate(iters):
+			print('processing Site: ',count,'file: ',idx)
 			if iterDone[idx] ==False: #unless we have run out of lines for this file, get the values for this file
 				#Get the next value for appropriate iters
 				if iterGo[idx] == True:
@@ -769,8 +768,8 @@ def combineDeep(samplesFile, outputPath,firstChrom):
 							sSite.setSSE(float(vals[3]),idx) # set SSE for this site
 							sSite.addAlphaCount(int(vals[4]), idx) # add alpha Counts
 							sSite.addBeta1Count(int(vals[5]), idx) # add beta1 Counts
-							sSite.addBeta2HardCount(int(vals[6]), idx) # add beta2Hard Counts
-							sSite.addBeta2SoftCount(int(vals[7]), idx) # add beta2Soft Counts
+							sSite.addBeta2SimpleCount(int(vals[6]), idx) # add beta2Simple Counts
+							sSite.addBeta2CrypticCount(int(vals[7]), idx) # add beta2Cryptic Counts
 							sSite.addBeta2Weighted(float(vals[8]), idx) # add beta2WeightedCounts
 							#read partner counts as a dictionary and update the splice site
 							pCounts = literal_eval(str(vals[9]))
@@ -785,7 +784,7 @@ def combineDeep(samplesFile, outputPath,firstChrom):
 								sSite.addCompetitorPos(c)
 
 						else: #if this sample doesn't have values for the spliceSite
-							#find beta1 and beta2Hard counts for the site, using partners and competitors
+							#find beta1 and beta2Simple counts for the site, using partners and competitors
 							filledGap = True
 							checkBam(BAMPaths[idx], sSite, idx)
 							sSite.setSSE(0.000,idx)
@@ -807,7 +806,7 @@ def combineDeep(samplesFile, outputPath,firstChrom):
 def combineShallow(samplesFile, outputPath, qGene, firstChrom):
 	print('Combining samples...')
 	outTSV = open(outputPath+".combined.tsv", 'w+')
-	outTSV.write("Sample\tRegion\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Hard_count\tbeta2Soft_count\tbeta2_weighted\tPartners\tCompetitors\n")
+	outTSV.write("Sample\tRegion\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2_weighted\tPartners\tCompetitors\n")
 	#Process the input paths file
 	samples = 0
 	bedPaths = [] # stores the absolute path to each SpliSER.bed file
@@ -903,8 +902,8 @@ def combineShallow(samplesFile, outputPath, qGene, firstChrom):
 							sSite.setSSE(float(vals[3]),idx) # set SSE for this site
 							sSite.addAlphaCount(int(vals[4]), idx) # add alpha Counts
 							sSite.addBeta1Count(int(vals[5]), idx) # add beta1 Counts
-							sSite.addBeta2HardCount(int(vals[6]), idx) # add beta2Hard Counts
-							sSite.addBeta2SoftCount(int(vals[7]), idx) # add beta2Soft Counts
+							sSite.addBeta2SimpleCount(int(vals[6]), idx) # add beta2Simple Counts
+							sSite.addBeta2CrypticCount(int(vals[7]), idx) # add beta2Cryptic Counts
 							sSite.addBeta2Weighted(float(vals[8]), idx) # add beta2WeightedCounts
 							#read partner counts as a dictionary and update the splice site
 							pCounts = literal_eval(str(vals[9]))
@@ -919,7 +918,7 @@ def combineShallow(samplesFile, outputPath, qGene, firstChrom):
 								sSite.addCompetitorPos(c)
 
 						else: #if this sample doesn't have values for the spliceSite
-							#find beta1 and beta2Hard counts for the site, using partners and competitors
+							#find beta1 and beta2Simple counts for the site, using partners and competitors
 							if qGene == 'All' or qGene == assocGene:
 								filledGap = True
 								print('checking bam',idx,'Site',count)
@@ -987,7 +986,7 @@ def diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 			outDiff.write(str(currentVals[0][1])+"\t"+str(currentVals[0][2])+"\t"+str(currentVals[0][3])) #write the region, splice site, and gene
 			for idx, t in enumerate(allTitles):
 				t_alpha = int(currentVals[idx][5])# get alpha Values
-				t_beta = float(currentVals[idx][6])+float(currentVals[idx][7]) # add beta1 and beta2Hard
+				t_beta = float(currentVals[idx][6])+float(currentVals[idx][7]) # add beta1 and beta2Simple
 				t_SSE = float(currentVals[idx][4])
 				if t_alpha+t_beta >= minReads: # if this sample passes the minimum read count for this site
 					outDiff.write("\t"+str(t_alpha)+"\t"+"{0:.1f}".format(t_beta)+"\t"+"{0:.2f}".format(t_SSE))
@@ -1035,7 +1034,7 @@ def GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSample
 				filtered = open(str(outputPath+currentGene+"_"+currentSite+"_filtered.log"),'w+') # otherwise write into a filter log file specific for this gene
 				for idx, t in enumerate(allTitles):
 					t_alpha = int(currentVals[idx][5])# get alpha Values
-					t_beta = float(currentVals[idx][6])+float(currentVals[idx][7]) # add beta1 and beta2Hard values
+					t_beta = float(currentVals[idx][6])+float(currentVals[idx][7]) # add beta1 and beta2Simple values
 					if t_alpha+t_beta >= minReads: # if this sample passes the minimum read count for this site
 						samplesPassing +=1
 						bufferString = bufferString+str(currentVals[idx][0])+"\t"+str(currentVals[idx][4])+"\n" #store sample name and SSE in buffer
@@ -1080,10 +1079,10 @@ if __name__ == "__main__":
 	parser_process.add_argument('-g', '--gene', dest='qGene', nargs='?', default='All', type=str, help="optional:Limit SpliSER to splice sites falling in a single locus (requires --chromosome and --annotationFile and --maxIntronSize)", required=False)
 	parser_process.add_argument('-m', '--maxIntronSize', dest='maxIntronSize', nargs='?', default=0, type=int, required=False, help="optional: required if passing the --gene parameter, the max intron size used in aligning the bam file")
 	#Parser for arguments when user calls command 'combine'
-	parser_combineDeep = subparsers.add_parser('combineDeep')
-	parser_combineDeep.add_argument('-s', '--samplesFile', dest='samplesFile', required=True, help="A three-column .tsv file, each line containing a sample name, the absolute path to a processed .SpliSER.bed file input, and the absolute path to the original bam file")
-	parser_combineDeep.add_argument('-o', '--outputPath', dest='outputPath', required=True, help="Absolute path to a folder, including file_prefix where SpliSER will write the output .tsv file")
-	parser_combineDeep.add_argument('-1', '--firstChrom', dest='firstChrom', required=True, help='The name of the first genomic region to be assessed, ie 1, Chr1, Chromosome_1 ,Scaffold1')
+	parser_combine = subparsers.add_parser('combine')
+	parser_combine.add_argument('-s', '--samplesFile', dest='samplesFile', required=True, help="A three-column .tsv file, each line containing a sample name, the absolute path to a processed .SpliSER.bed file input, and the absolute path to the original bam file")
+	parser_combine.add_argument('-o', '--outputPath', dest='outputPath', required=True, help="Absolute path to a folder, including file_prefix where SpliSER will write the output .tsv file")
+	parser_combine.add_argument('-1', '--firstChrom', dest='firstChrom', required=True, help='The name of the first genomic region to be assessed, ie 1, Chr1, Chromosome_1 ,Scaffold1')
 
 	parser_combineShallow = subparsers.add_parser('combineShallow')
 	parser_combineShallow.add_argument('-s', '--samplesFile', dest='samplesFile', required=True, help="A three-column .tsv file, each line containing a sample name, the absolute path to a processed .SpliSER.bed file input, and the absolute path to the original bam file")
