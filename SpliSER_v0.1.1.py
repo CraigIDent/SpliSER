@@ -10,7 +10,7 @@ Raises:
 Testing command:
 
 """
-version = "v0.1.0_build03Jan2020"
+version = "v0.1.0_build04Feb2020"
 import sys
 import timeit
 import time
@@ -377,9 +377,6 @@ def checkBam(bedFile, sSite, sample):
 	#get the read counts for this IR junction
 	#take list of competitors, and Partner positions
 	#if we see a change from N->M or M->N at competitor and partner positions, then this is also a beta2 read - and we'll need to subtract from our beta2counts
-	beta1_count = 0
-	alphaBeta_count = 0
-	SimpleBeta2_count = 0
 	targetPos = sSite.getPos()
 	#get list of partner and competitor positions
 	competitors = sSite.getCompetitorPos()
@@ -502,11 +499,7 @@ def checkBam(bedFile, sSite, sample):
 
 				elif beta1_read == True and SimpleBeta2_read == False: # finally, if it's not SimpleBeta2, add read as a beta1 count
 					sSite.addBeta1Count(1 , sample) # add counts for reads showing beta1 non-usage, and naught else
-					#print('Here')
-					#print(partners,competitors)
-	#update values for this site
 
-	sSite.addBeta2SimpleCount(SimpleBeta2_count, sample) #tuck these away for later, we won't weight these counts because they are direct evidence of non-usage
 
 def trueDivCatchZero(array1, array2):
 	"""
@@ -987,9 +980,11 @@ def diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 			for idx, t in enumerate(allTitles):
 				t_alpha = int(currentVals[idx][5])# get alpha Values
 				t_beta = float(currentVals[idx][6])+float(currentVals[idx][7]) # add beta1 and beta2Simple
+				t_WeightedCrypticBeta = float(currentVals[idx][9])
 				t_SSE = float(currentVals[idx][4])
 				if t_alpha+t_beta >= minReads: # if this sample passes the minimum read count for this site
-					outDiff.write("\t"+str(t_alpha)+"\t"+"{0:.1f}".format(t_beta)+"\t"+"{0:.2f}".format(t_SSE))
+					t_beta = t_beta+t_WeightedCrypticBeta
+					outDiff.write("\t"+str(t_alpha)+"\t"+"{0:.2f}".format(t_beta)+"\t"+"{0:.2f}".format(t_SSE))
 				else:
 					outDiff.write("\tNA\tNA\tNA")
 			outDiff.write("\n")
