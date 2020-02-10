@@ -580,7 +580,7 @@ def outputData(outputFile, qChrom, minReads, inGene, Titles):
 def outputBedFile(outputPath):
 	outBed = open(outputPath+".SpliSER.bed","w+")
 	#Write the header line
-	outBed.write("Region\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2_weighted\tPartners\tCompetitors\n")
+	outBed.write("Region\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2Cryptic_weighted\tPartners\tCompetitors\n")
 	for c_index, c in enumerate(chrom_index):
 		for site in site2D_array[c_index]:
 			outBed.write(str(site.getChromosome())+"\t")
