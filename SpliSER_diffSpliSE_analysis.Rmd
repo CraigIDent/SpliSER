@@ -1,0 +1,139 @@
+---
+title: "diffSpliSE analysis"
+author: "Craig I Dent"
+date: "23/01/2020"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(digits=6)
+options(scipen=6)
+```
+
+Load Libraries
+```{r}
+library(edgeR)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+Read in the diffSpliSE output file
+```{r}
+#ENTER ABSOLUTE PATH TO diffSPLISE OUTPUT FILE HERE
+#         V
+inFILE <-""
+#ENTER 'TARGET' FILE HERE
+#             V
+targetFILE <-""
+
+#Read in data
+SpliSER_out<-read.table(inFILE,row.names=NULL,header=TRUE,sep="\t")
+SpliSER_out
+targets <-read.delim(targetFILE, stringsAsFactors=FALSE)
+Group <- factor(targets$Group)
+Group2 <- rep(Group, each =2)
+lib_size2 <- rep(targets$Library_size, each=2)
+targets
+```
+
+Filter NA containing Rows (not including the Gene Coloumn)
+```{r}
+SpliSER_narm <- SpliSER_out[complete.cases(subset(SpliSER_out, select=-c(Gene))), ]
+SpliSER_narm
+```
+
+Filter all those sites that dont change across all samples, irregardless of condition.
+```{r}
+SpliSER_SSE <- SpliSER_narm %>% dplyr:: select(grep("_SSE", names(SpliSER_narm)))
+SpliSER_SSE$meanSSE <- rowMeans(SpliSER_SSE)
+SpliSER_SSE
+
+SpliSER_filt <- SpliSER_narm[SpliSER_SSE$meanSSE>0.05,] 
+SpliSER_filt <- SpliSER_narm[SpliSER_SSE$meanSSE<0.95,]
+SpliSER_filt
+
+```
+
+Make a DGEList dataframe
+```{r}
+counts <- data.matrix(SpliSER_filt %>% dplyr:: select(grep("_alpha|_beta", names(SpliSER_filt))), rownames.force = FALSE)
+labels <- SpliSER_filt[1:3] 
+counts
+labels
+y <- DGEList(counts= counts, genes= labels, lib.size = lib_size2, group=Group2)
+y
+```
+
+Record Sample Groupings
+```{r}
+Eff <- rep(c("alpha","beta"), length(Group))
+Eff <- factor(Eff, levels=c("alpha","beta"))
+Sample2 <- rep(targets$Sample, each=2)
+Sample2 <- factor(Sample2)
+```
+Fit
+```{r}
+Combo <- factor(paste(Eff,Group2,sep="."))
+design <- model.matrix(~0+Combo)
+colnames(design) <- levels(Combo)
+design
+y <- estimateDisp(y, design=design, trend="none")
+y$common.dispersion
+summary(y$prior.df)
+fit<- glmFit(y,design)
+```
+
+Pull contrast out of design  matrix
+```{r}
+designCols <- as.character(colnames(design))
+designCols
+
+contrastList <- c("(",designCols[1],"-",designCols[3],")-(",designCols[2],"-",designCols[4],")")
+contrastString <- paste(contrastList, sep = '')
+
+myargs <- list(contr = contrastString, levels=design)
+#contr=(alpha.Col-beta.Col)-(alpha.SC35.scl-beta.SC35.scl)
+contrast <- do.call(makeContrasts,myargs)
+contrast
+lrt <- glmLRT(fit, contrast=contrast)
+```
+Record values for all splice-sites, and those with a significant p-value
+```{r}
+all<- topTags(lrt, n = 1000000, adjust.method = "BH",  p.value = 1.1) 
+all
+
+hits<- topTags(lrt, n = 1000000, adjust.method = "BH",  p.value = 0.05) 
+hits
+
+```
+
+Merge statistical test data with rest of data
+```{r}
+hits_intersect <- merge(hits, SpliSER_filt, by=c("Region","Site","Gene")) 
+drops<- c("logFC","logCPM","LR", "meanSSE")
+hits_intersect <- hits_intersect[ , !(names(hits_intersect) %in% drops)]
+
+#CURRENTLY THIS SECTION NEEDS TO BE UPDATED WITH YOUR NAMES (eg $Sample1Rep1_SSE)
+hits_intersect$avg1 = (hits_intersect$ColA_SSE + hits_intersect$ColB_SSE +hits_intersect$ColC_SSE)/3
+hits_intersect$avg2 = (hits_intersect$sc35.sclA_SSE + hits_intersect$sc35.sclB_SSE +hits_intersect$sc35.sclC_SSE)/3
+hits_intersect$dSSE = hits_intersect$avg2 - hits_intersect$avg1
+hits_intersect
+```
+
+Filter based on the average change in SSE between groups
+```{r}
+hits_SSEfiltered <- hits_intersect[abs(hits_intersect$dSSE) >= 0.1,]
+hits_SSEfiltered[order(hits_SSEfiltered$FDR),]
+
+```
+
+Output Data
+```{r}
+#ENTER ABSOLUTE PATH TO OUTPUT FOR FULL-DATASET HERE
+#                                   V
+write.table(hits_intersect, file = "All.tsv", sep='\t', row.names = FALSE, col.names = TRUE, quote=FALSE)
+#ENTER ABSOLUTE PATH TO OUTPUT FOR DIFF. SPLICED SITES HERE
+#                                     V
+write.table(hits_SSEfiltered, file = "BHhits_SSEFiltered.tsv", sep='\t', row.names = FALSE, col.names = TRUE, quote=FALSE)
+```

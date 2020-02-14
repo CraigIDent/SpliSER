@@ -10,7 +10,7 @@ Raises:
 Testing command:
 
 """
-version = "v0.1.0_build04Feb2020"
+version = "v0.1.1_build13Feb2020"
 import sys
 import timeit
 import time
@@ -296,7 +296,6 @@ def findAlphaCounts(bedFile, qChrom, qGene, maxIntronSize, sample=0, numsamples=
 					site_left = None
 					site_right = None
 					for num, site_info in enumerate([[leftpos,left_site_idx],[rightpos,right_site_idx]]):
-						#arint(sie_info)
 						ss = None
 						# if this is a new site
 						if site_info[1] == -1:
@@ -322,7 +321,6 @@ def findAlphaCounts(bedFile, qChrom, qGene, maxIntronSize, sample=0, numsamples=
 									strand = strand,
 									source = ''
 									)
-							#gene.addSite(ss)
 							ss.setGene(gene)
 							#add the site in it's ordered position
 							#bisect.insort(site2D_array[chrom_idx],ss)
@@ -340,11 +338,6 @@ def findAlphaCounts(bedFile, qChrom, qGene, maxIntronSize, sample=0, numsamples=
 							site_left = ss
 						else: #if the right site
 							site_right = ss
-
-					#if LinGene:
-					#	site_left.setGene(QUERY_gene)
-					#if RinGene:
-					#	site_right.setGene(QUERY_gene)
 
 					if left_site_new:
 						bisect.insort(site2D_array[chrom_idx],site_left)
@@ -383,9 +376,6 @@ def checkBam(bedFile, sSite, sample):
 	partners = []
 	for partner, counts in sSite.getPartnerCounts().items(): # getting this from partner counts instead of sSite.getPartners().. .getPos() so the funciton is compatible with process and combine commands
 		partners.append(partner)
-	#for p in sSite.getPartners():
-	#	partners.append(p.getPos())
-
 	#Call Samtools view to get all reads mapping across the splice site of interest.
 	bamview = subprocess.Popen(['samtools', 'view', str(bedFile), str(sSite.getChromosome())+':'+str(targetPos)+'-'+str((int(targetPos)+1))], stdout = subprocess.PIPE)
 	#, stderr=subprocess.DEVNULL)
@@ -400,7 +390,6 @@ def checkBam(bedFile, sSite, sample):
 			leftBound= int(values[3]) #leftmost edge of read.
 			if leftBound <= int(targetPos): #if the read crosses the splice site
 				cigar = str(values[5])
-				#type, partnerPos = checkPotentialBeta1Read(pos, cigar, leftBound, partners, competitors)
 				#preprocess cigar string
 				digits = list(filter(None, digit_pattern.split(cigar)))
 				chars = list(filter(None, char_pattern.split(cigar)))
@@ -431,7 +420,7 @@ def checkBam(bedFile, sSite, sample):
 							if mappedRegion:
 								beta1_read = True
 				#check if we see splicing between partner site and competitor site
-				currentPos = int(leftBound) ####RESET THE COUNTER CRAIG!
+				currentPos = int(leftBound) ###RESET THE COUNTER
 				for idx, d in enumerate(digits):
 					case = chars[idx]
 					currentPos += int(d)
@@ -681,7 +670,6 @@ def combine(samplesFile, outputPath,firstChrom):
 			print(str(allTitles), str(bedPaths), str(BAMPaths))
 			raise Exception('Samples File contains lines that do not have exactly 3 tab-separated columns')
 
-	#print(str(allTitles), str(bedPaths), str(BAMPaths))
 	#Iterate bed files
 	iters = []
 	for file in bedPaths: # make a bed file line generator for each bed file
@@ -699,7 +687,6 @@ def combine(samplesFile, outputPath,firstChrom):
 	chroms = ['']*samples
 	iterGo = [True]*samples #initialise iterGo for each sample
 	iterDone = [False]*samples
-	#print('Go',iterGo)
 
 
 	#load up intial values
@@ -738,9 +725,6 @@ def combine(samplesFile, outputPath,firstChrom):
 						assocGene = currentVals[idx][2]
 		#if we didn't exhaust all iterators at the start of this loop
 		if not(len(set(iterDone)) <=1 and iterDone[0] ==True):
-			#print(chroms)
-			#print('Go',iterGo)
-			#print(lowestPos, assocGene)
 			#Create a Splice Site for lowestPos
 			sSite = makeSingleSpliceSite(currentChrom, lowestPos, samples, '')
 
@@ -766,7 +750,6 @@ def combine(samplesFile, outputPath,firstChrom):
 							sSite.addBeta2Weighted(float(vals[8]), idx) # add beta2WeightedCounts
 							#read partner counts as a dictionary and update the splice site
 							pCounts = literal_eval(str(vals[9]))
-							#print(pCounts, type(pCounts))
 							for key, val in pCounts.items():
 								partners.append(key)
 								sSite.addPartnerCount(key, val ,idx)
@@ -833,7 +816,6 @@ def combineShallow(samplesFile, outputPath, qGene, firstChrom):
 	chroms = ['']*samples
 	iterGo = [True]*samples #initialise iterGo for each sample
 	iterDone = [False]*samples
-	#print('Go',iterGo)
 
 
 	#load up intial values
@@ -872,9 +854,6 @@ def combineShallow(samplesFile, outputPath, qGene, firstChrom):
 						assocGene = currentVals[idx][2]
 		#if we didn't exhaust all iterators at the start of this loop
 		if not(len(set(iterDone)) <=1 and iterDone[0] ==True):
-			#print(chroms)
-			#print('Go',iterGo)
-			#print(lowestPos, assocGene)
 			#Create a Splice Site for lowestPos
 			sSite = makeSingleSpliceSite(currentChrom, lowestPos, samples, '')
 
@@ -975,7 +954,6 @@ def diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 				print("Samples aren\'t match up, please check there are no missing lines in your combined file, or missing lines in your samples file" )
 				break
 
-			#print(currentVals)
 			outDiff.write(str(currentVals[0][1])+"\t"+str(currentVals[0][2])+"\t"+str(currentVals[0][3])) #write the region, splice site, and gene
 			for idx, t in enumerate(allTitles):
 				t_alpha = int(currentVals[idx][5])# get alpha Values
@@ -1024,7 +1002,6 @@ def GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSample
 			currentSite = str(currentVals[0][2])
 			bufferString = ''
 			samplesPassing = 0
-			#copied from SEECR
 			if qGene == currentGene or qGene == 'All':
 				filtered = open(str(outputPath+currentGene+"_"+currentSite+"_filtered.log"),'w+') # otherwise write into a filter log file specific for this gene
 				for idx, t in enumerate(allTitles):
@@ -1058,8 +1035,6 @@ if __name__ == "__main__":
 	# this won't be run when imported
 	start = timeit.default_timer()
 
-	#example code for process
-	#python SpliSER_v0.1.0_build18Nov19.py process -B /Users/craigdent/Downloads/FLM_SpliceSite_Mutants/Pee0/SRR3464400_SRX1735036_9878.sorted.bam -b /Users/craigdent/Downloads/FLM_SpliceSite_Mutants/Pee0/SRR3464400_SRX1735036_9878.bed -O ~/Downloads/SRR3464400 -c Chr1 -A /Users/craigdent/Downloads/TAIR10_genes.tsv
 	#Parse arguments form the command line
 	parser = argparse.ArgumentParser(description="SpiSER v0.1.0 - Splice Site Strength Estimates from RNA-seq")
 	subparsers = parser.add_subparsers(dest="command")

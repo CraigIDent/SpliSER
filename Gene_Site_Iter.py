@@ -101,12 +101,9 @@ class Site:
 		self.pos = int(pos)
 		self.source = source
 		self.alphaCounts = [0]*int(samples)
-		#self.alphaCounts = np.empty(int(samples), np.int32)
 		self.beta1Counts = [0]*int(samples)
-		#self.beta1Counts = np.empty(int(samples), np.int32)
-		self.beta2SoftCounts = [0]*int(samples)
-		self.beta2HardCounts = [0]*int(samples) #counts where we observe non-usage of the target site, along with usage of a partner and a competitor.
-		#self.beta2Counts = np.empty(int(samples), np.int32)
+		self.beta2CrypticCounts = [0]*int(samples)
+		self.beta2SimpleCounts = [0]*int(samples) #counts where we observe non-usage of the target site, along with usage of a partner and a competitor.
 		self.beta2Weighted = [0.000]*int(samples)
 		self.Partners = [] # array of Site objects
 		self.CompetitorPos = [] #array of Site Positions
@@ -115,7 +112,6 @@ class Site:
 		self.SSEs= [0.000]*int(samples)
 		self.strand = strand
 		self.beta2weights = {} # Dictionary where key is Partner Position and value is a weight between 0 and 1
-		#self.id = str(chromosome)+"_"+str(pos)
 		self.Gene = None
 #Operators for Sites
 	def __lt__(self, other):
@@ -151,14 +147,14 @@ class Site:
 	def addBeta1Count(self, count, sample):
 		self.beta1Counts[sample] += count
 
-	def addBeta2SoftCount(self, count, sample):
-		self.beta2SoftCounts[sample] += count
+	def addBeta2CrypticCount(self, count, sample):
+		self.beta2CrypticCounts[sample] += count
 
-	def addBeta2HardCount(self, count, sample):
-		self.beta2HardCounts[sample] += count
+	def addBeta2SimpleCount(self, count, sample):
+		self.beta2SimpleCounts[sample] += count
 
-	def addBeta2SoftCounts(self, values):
-		self.beta2SoftCounts = map(add, self.beta2SoftCounts, values)
+	def addBeta2CrypticCounts(self, values):
+		self.beta2CrypticCounts = map(add, self.beta2CrypticCounts, values)
 
 	def addBeta2Weighted(self, count, sample):
 		self.beta2Weighted[sample] += count
@@ -194,26 +190,23 @@ class Site:
 	def getBeta1Counts(self):
 		return map(int, self.beta1Counts)
 
-	def getBeta2SoftCount(self, sample):
-		return self.beta2SoftCounts[sample]
+	def getBeta2CrypticCount(self, sample):
+		return self.beta2CrypticCounts[sample]
 
-	def getBeta2SoftCounts(self):
-		return self.beta2SoftCounts
+	def getBeta2CrypticCounts(self):
+		return self.beta2CrypticCounts
 
-	def getBeta2HardCount(self, sample):
-		return self.beta2HardCounts[sample]
+	def getBeta2SimpleCount(self, sample):
+		return self.beta2SimpleCounts[sample]
 
-	def getBeta2HardCounts(self):
-		return self.beta2HardCounts
+	def getBeta2SimpleCounts(self):
+		return self.beta2SimpleCounts
 
 	def getBeta2WeightedCount(self, sample):
 		return self.beta2Weighted[sample]
 
 	def getBeta2WeightedCounts(self):
 		return self.beta2Weighted
-
-#	def getAllCount(self, sample):
-#		return [self.alphaCounts[sample], self.beta1Counts[sample], self.beta2Weighted[sample]]
 
 	def getGeneName(self):
 		return self.Gene.getName()
@@ -235,9 +228,6 @@ class Site:
 
 	def getPartnerCounts(self):
 		return self.PartnerCounts
-
-#	def getPartnerBeta2HardCounts(self):
-#		return self.PartnerBeta2HardCounts
 
 	def getPartnerBeta2DoubleCounts(self):
 		return self.PartnerBeta2DoubleCounts
