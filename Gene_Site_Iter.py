@@ -20,7 +20,7 @@ class Gene:
 		self.strand = str(strand)
 
     #Operators for genes
-    def __lt__(self, other):
+	def __lt__(self, other):
 		return self.leftPos < other.leftPos
 	def __le__(self, other):
 		return self.leftPos <= other.leftPos
@@ -93,7 +93,7 @@ class Gene:
 
 class Site:
 	#Slot attributes so __dict__ is not required for each
-	__slots__ = ('chromosome','samples','pos','source','alphaCounts', 'beta1Counts','beta2Counts','beta2Weighted','Partners','PartnerCounts','SEs','strand','beta2weights','Gene')
+	__slots__ = ('chromosome','samples','pos','source','alphaCounts', 'beta1Counts','beta2SimpleCounts','beta2CrypticCounts','beta2Weighted','Partners','CompetitorPos','PartnerCounts','PartnerBeta2DoubleCounts','SSEs','strand','beta2weights','Gene')
 
 	def __init__(self, chromosome, pos, samples, strand, source):
 		self.chromosome = chromosome
@@ -102,8 +102,8 @@ class Site:
 		self.source = source
 		self.alphaCounts = [0]*int(samples)
 		self.beta1Counts = [0]*int(samples)
-		self.beta2CrypticCounts = [0]*int(samples)
 		self.beta2SimpleCounts = [0]*int(samples) #counts where we observe non-usage of the target site, along with usage of a partner and a competitor.
+		self.beta2CrypticCounts = [0]*int(samples)
 		self.beta2Weighted = [0.000]*int(samples)
 		self.Partners = [] # array of Site objects
 		self.CompetitorPos = [] #array of Site Positions

@@ -518,13 +518,13 @@ def findBeta2Counts(site, numSamps):
 		#get the alpha reads shared between this site and the partner
 		pCounts = PartnerCounts[pSite.getPos()]
 		#beta 2 reads are all alpha reads of that partner, minus those shared between partner site and the target site
-		b2 = map(sub, pAlphas, pCounts)
+		b2 = list(map(sub, pAlphas, pCounts))
 
 		#See if the b2 reads for this partner contain any double counts (that we observed in checkBam)
 		if pSite.getPos() in PartnerBetaDoubleCounts:
 			doubleCounts = PartnerBetaDoubleCounts[pSite.getPos()]
 			#adjust for double-counter reads
-			b2 = map(sub, b2, doubleCounts)
+			b2 = list(map(sub, b2, doubleCounts))
 
 		#tally Cryptic beta 2 counts
 		beta2CrypticCounts = list(map(add, beta2CrypticCounts, b2))
@@ -931,7 +931,7 @@ def diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 	for t in allTitles:
 		outDiff.write("\t"+str(t)+"_alpha")
 		outDiff.write("\t"+str(t)+"_beta")
-        outDiff.write("\t"+str(t)+"_SSE")
+		outDiff.write("\t"+str(t)+"_SSE")
 	outDiff.write("\n")
 
 	#make an iterator for the combined file
