@@ -20,7 +20,7 @@ class Gene:
 		self.strand = str(strand)
 
     #Operators for genes
-    	def __lt__(self, other):
+    def __lt__(self, other):
 		return self.leftPos < other.leftPos
 	def __le__(self, other):
 		return self.leftPos <= other.leftPos
@@ -113,6 +113,7 @@ class Site:
 		self.strand = strand
 		self.beta2weights = {} # Dictionary where key is Partner Position and value is a weight between 0 and 1
 		self.Gene = None
+
 #Operators for Sites
 	def __lt__(self, other):
 		return self.pos < other.pos
