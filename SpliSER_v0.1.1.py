@@ -931,7 +931,7 @@ def diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 	for t in allTitles:
 		outDiff.write("\t"+str(t)+"_alpha")
 		outDiff.write("\t"+str(t)+"_beta")
-                outDiff.write("\t"+str(t)+"_SSE")
+        outDiff.write("\t"+str(t)+"_SSE")
 	outDiff.write("\n")
 
 	#make an iterator for the combined file
