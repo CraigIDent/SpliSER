@@ -3,6 +3,10 @@ Splice-site Strength Estimation using RNA-seq
 
 <br>
 
+version 0.1.3 (7th September 2020)
+
+<br>
+
 SpliSER quantifies the utilisation of splice sites across the genome. Generating a Splice-site Strength Estimate (SSE) for each individual site.
 
 SpliSER has three commands which are used in succession across an analysis: *process*, *combine*, and *output*
@@ -43,7 +47,9 @@ There are several optional parameters, which add gene annotations to the output 
 | Optional Parameter      | Description |
 | ----------- | ----------- |
 | -A &nbsp;    \--annotationFile | The path to a GFF or GTF file mathcing the genome to which your RNA-seq data was aligned|
-| -t &nbsp;   \--annotationType | The type of feature to be extracted from the annotation file. 'gene' by default. |
+| -t &nbsp;   \--annotationType | The type of feature to be extracted from the annotation file. (Default: gene). |
+| --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
+| -s &nbsp; \--strandedType | Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.  (Default : fr).|
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
 | -g &nbsp; \--gene | Limit the analysis to one locus, given by name matching the annotation file *eg.* '-g ENSMUSG00000024949'. (If using this parameter you must also specify the --chromosome and --maxIntronSize) |
 | -m &nbsp; \--maxIntronSize | **only required if using -g** This is the maximum intron size used in your alignment (If you're unsure, take a maximum intron size for your species *eg.* '-m 6000' for *A.thaliana* or '-m 500000' for *M.musculus*).  |
@@ -62,7 +68,7 @@ There are several optional parameters, which add gene annotations to the output 
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.2.py process -h
+python SpliSER_v0.1.3.py process -h
 ```
 <br>
 <br>
@@ -85,11 +91,12 @@ The *combine* command requires the following three input parameters:
 
 | Required Parameter      | Description |
 | ----------- | ----------- |
-| -s &nbsp;    \--samplesFile      | The path to a user generated file with three tab-separated columns providing information for each of the processed samples to be combined (see example below)|
-| -1 &nbsp;    \--firstChrom  | The name of the chromosome/scaffold that appears first in the original annotation file (usually '1' or 'chr1')|
+| -S &nbsp;    \--samplesFile      | The path to a user generated file with three tab-separated columns providing information for each of the processed samples to be combined (see example below)|
 | -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting .combined.tsv file will be written|
 
 The **samplesFile** needs to have three columns and no header row. Each row stores the information for one of the samples you wish to combine.
+
+
 
 | Column | content |
 | --- | --- |
@@ -105,15 +112,23 @@ Sample3 /path/to/Sample3.SpliSER.tsv  /path/to/bams/Sample3.bam
 Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 
 ```
-* **firstChrom** gives the first genomic region (usually a chromosome) that should appear in your data. This is provided in case some samples did not record splicing in the first region, SpliSER still knows where to start combining.
+* The samplesFile parameter changed from -s to -S in v0.1.3 onwards
 
 * The **outputPath** needs to end with the sample prefix, so if you are processing samples for a WT vs mutant analysis, your output path might read '-o /path/to/directory/WTvsMut'; this will produce a file WTvsMut.combined.tsv in the folder /path/to/directory.
+
+| Optional Parameter      | Description |
+| ----------- | ----------- |
+| --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
+| -s &nbsp; \--strandedType | Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR (Default : fr)|
+| -g &nbsp; \--gene | Limit the analysis to one locus *eg.* '-g ENSMUSG00000024949'(only use this if you also applied the --gene parameter in the previous process step) (Default: All) |
+
+* The -1 / \--firstChrom parameter is redundant as of v0.1.3. The combine command now uses a topological sort to infer the order of genomic regions present in the input files.
 
 <br>
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.2.py combine -h
+python SpliSER_v0.1.3.py combine -h
 ```
 <br>
 
@@ -142,7 +157,7 @@ By this step you should already have everything you need
 
 | Required Parameter      | Description |
 | ----------- | ----------- |
-| -s &nbsp;    \--samplesFile      | The path to the samples file you used in the previous step, used here to access the sample names|
+| -S &nbsp;    \--samplesFile      | The path to the samples file you used in the previous step, used here to access the sample names|
 | -C &nbsp;    \--combinedFile  | The path to the combined.tsv file that you generated in the previous step|
 | -t &nbsp;    \--outputType  | 'GWAS' for a SpliSE-QTL analysis, 'diffSpliSE' for traditional comparison between groups|
 | -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting output file will be written|
@@ -150,6 +165,7 @@ By this step you should already have everything you need
 * The *outputType* command tells SpliSER to format results in one of two ways. 
   * **GWAS** Will produce an individual file for each splice site. This is a two coloumn file containing only the sample name, and the associated SSE value. These files can then be further processed by the user as input for their preferred GWAS pipeline.
   * **DiffSpliSE** Will produce a single file with one row for each splice site, this file can be directly taken as input for the DiffSpliSE.Rmd pipeline script for differential splicing analysis between groups.
+  * The samplesFile parameter changed from -s to -S in v0.1.3 onwards
 <br>
 
 | Optional Parameter      | Description |
@@ -166,7 +182,7 @@ By this step you should already have everything you need
   
 Help for this command can also  be viewed in terminal using:
 ```
-python SpliSER_v0.1.2.py output -h
+python SpliSER_v0.1.3.py output -h
 ```
 
 ## Further Information
