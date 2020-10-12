@@ -1,4 +1,4 @@
-#Version 0.1.3 - 2 Sept 2020
+#Version 0.1.3 - 12 Oct 2020
 
 #Gene.py
 #defines a 'Gene' object. Containing annotation information and all splice sites detected through RNA-seq analysis.
@@ -140,7 +140,9 @@ class Site:
 		self.Gene = g
 
 	def setSSEs(self, values):
+		print("setting SSEs")
 		self.SSEs = values
+		print(self.SSEs)
 
 	def setSSE(self, value, sample):
 		self.SSEs[sample] = value
@@ -162,10 +164,10 @@ class Site:
 		self.beta2SimpleCounts[sample] += count
 
 	def addBeta2SimpleCounts(self, values):
-		self.beta2SimpleCounts = map(add, self.beta2SimpleCounts, values)
+		self.beta2SimpleCounts =[x + y for x, y in zip(self.beta2SimpleCounts, values)]
 
 	def addBeta2CrypticCounts(self, values):
-		self.beta2CrypticCounts = map(add, self.beta2CrypticCounts, values)
+		self.beta2CrypticCounts =[x + y for x, y in zip(self.beta2CrypticCounts, values)]
 
 	def addBeta2Weighted(self, count, sample):
 		self.beta2Weighted[sample] += count
@@ -185,8 +187,7 @@ class Site:
 		if sitePos not in self.PartnerBeta2DoubleCounts:
 			self.PartnerBeta2DoubleCounts[sitePos] = [0]*int(self.samples)
 
-		self.PartnerBeta2DoubleCounts[sitePos] = map(add,self.PartnerBeta2DoubleCounts[sitePos], values)
-
+		self.PartnerBeta2DoubleCounts[sitePos] =[x + y for x, y in zip(self.PartnerBeta2DoubleCounts[sitePos], values)]
 
 	def addPartner(self, site):
 		if site not in self.Partners:
@@ -201,13 +202,13 @@ class Site:
 		return self.alphaCounts[sample]
 
 	def getAlphaCounts(self):
-		return map(int, self.alphaCounts)
+		return [int(a) for a in self.alphaCounts]
 
 	def getBeta1Count(self, sample):
 		return self.beta1Counts[sample]
 
 	def getBeta1Counts(self):
-		return map(int, self.beta1Counts)
+		return [int(b) for b in self.beta1Counts]
 
 	def getBeta2CrypticCount(self, sample):
 		return self.beta2CrypticCounts[sample]

@@ -1,6 +1,7 @@
 """
 SpliSER- Splice-site Strength Estimation from RNA-seq
 """
+#Version 0.1.3 - 12 Oct 2020
 version = "v0.1.3"
 import sys
 import timeit
@@ -10,7 +11,7 @@ import argparse
 import HTSeq
 import re
 from operator import truediv
-from Gene_Site_Iter_Graph import Gene, Site, Iter, Graph
+from Gene_Site_Iter_Graph_v013 import Gene, Site, Iter, Graph
 import numpy
 from operator import add, truediv, mul, sub
 import bisect
@@ -590,20 +591,20 @@ def findBeta2Counts(site, numSamps):
 		#get the alpha reads shared between this site and the partner
 		pCounts = PartnerCounts[pSite.getPos()]
 		#beta 2 reads are all alpha reads of that partner, minus those shared between partner site and the target site
-		b2 = list(map(sub, pAlphas, pCounts))
+		b2 = [x - y for x, y in zip(pAlphas, pCounts)]
 		#See if the b2 reads for this partner contain any double counts (that we observed in checkBam)
 		if pSite.getPos() in site.getPartnerBeta2DoubleCounts():
 			doubleCounts = site.getPartnerBeta2DoubleCounts()[pSite.getPos()]
 			#adjust for double-counter reads
-			b2 = list(map(subIntNoNeg, b2, doubleCounts))
+			b2 = [subIntNoNeg(x,y) for x, y in zip(b2, doubleCounts)]
 		#tally Cryptic beta 2 counts
-		beta2CrypticCounts = list(map(add, beta2CrypticCounts, b2))
+		beta2CrypticCounts = [x + y for x, y in zip(beta2CrypticCounts, b2)]
 		#calculate weights for the given partner
 		pWeights = trueDivCatchZero(pCounts, TotalAlphas)
 		#tally weighted beta2 counts
 		for i in range(0,numSamps):
 			b2[i] = b2[i]*pWeights[i]
-		beta2CrypticWeighted = list(map(add, beta2CrypticWeighted, b2))
+		beta2CrypticWeighted = [x + y for x, y in zip(beta2CrypticWeighted, b2)]
 
 	#update values for this site
 	site.addBeta2CrypticCounts(beta2CrypticCounts)
@@ -611,19 +612,21 @@ def findBeta2Counts(site, numSamps):
 
 
 def calculateSSE(site):
-	alpha = site.getAlphaCounts()
+
+	alpha = list(site.getAlphaCounts())
 	beta1 = site.getBeta1Counts()
 	beta2Simple = site.getBeta2SimpleCounts()
 	beta2w = site.getBeta2WeightedCounts()
-	betas = map(add, beta1, beta2Simple)
-	betas = map(add, betas, beta2w)
-	denominator = map(add, alpha, betas)
+	betas = [x + y for x, y in zip(beta1, beta2Simple)]
+	betas = [x + y for x, y in zip(betas, beta2w)]
+	denominator = [x + y for x, y in zip(alpha, betas)]
+
 	site.setSSEs(trueDivCatchZero(list(alpha), list(denominator)))
 
 def outputBedFile(outputPath):
 	outBed = open(outputPath+".SpliSER.tsv","w+")
 	#Write the header line
-	outBed.write("Region\tSite\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2Cryptic_weighted\tPartners\tCompetitors\n")
+	outBed.write("Region\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2Cryptic_weighted\tPartners\tCompetitors\n")
 	for c_index, c in enumerate(chrom_index):
 		for site in site2D_array[c_index]:
 			outBed.write(str(site.getChromosome())+"\t")
@@ -1065,10 +1068,13 @@ def diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 	#make an iterator for the combined file
 	comboFile = open(combinedFile, 'r')
 	#skip the header
-	comboFile.next()
+	#comboFile.next()
+	nextLine = next(comboFile,None)
+
 	while not fileFinished: #go until the file is exhausted
 		currentVals = []
 		for idx, t in enumerate(allTitles):
+			#Skip the header
 			nextLine = next(comboFile,None)
 			if nextLine is not None:
 				currentVals.append(nextLine.rstrip().split("\t")) #store an array of values for each sample
@@ -1126,18 +1132,18 @@ def GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSample
 				print("Samples aren\'t match up, please check there are no missing lines in your combined file, or missing lines in your samples file" )
 				break
 
-			currentGene = str(currentVals[0][4])
+			currentGene = str(currentVals[0][3])
 			currentSite = str(currentVals[0][2])
 			bufferString = ''
 			samplesPassing = 0
 			if qGene == currentGene or qGene == 'All':
 				filtered = open(str(outputPath+currentGene+"_"+currentSite+"_filtered.log"),'w+') # otherwise write into a filter log file specific for this gene
 				for idx, t in enumerate(allTitles):
-					t_alpha = int(currentVals[idx][6])# get alpha Values
-					t_beta = float(currentVals[idx][7])+float(currentVals[idx][8]) # add beta1 and beta2Simple values
+					t_alpha = int(currentVals[idx][5])# get alpha Values
+					t_beta = float(currentVals[idx][6])+float(currentVals[idx][7]) # add beta1 and beta2Simple values
 					if t_alpha+t_beta >= minReads: # if this sample passes the minimum read count for this site
 						samplesPassing +=1
-						bufferString = bufferString+str(currentVals[idx][0])+"\t"+str(currentVals[idx][5])+"\n" #store sample name and SSE in buffer
+						bufferString = bufferString+str(currentVals[idx][0])+"\t"+str(currentVals[idx][4])+"\n" #store sample name and SSE in buffer
 					else:
 						filtered.write(str(t)+" did not pass minReads for "+currentSite+"\n")
 				if samplesPassing >= minSamples:
