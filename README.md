@@ -3,7 +3,7 @@ Splice-site Strength Estimation using RNA-seq
 
 <br>
 
-version 0.1.3 (7th September 2020)
+version 0.1.5 (11th January 2020)
 
 <br>
 
@@ -68,7 +68,7 @@ There are several optional parameters, which add gene annotations to the output 
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.3.py process -h
+python SpliSER_v0.1.5.py process -h
 ```
 <br>
 <br>
@@ -112,7 +112,6 @@ Sample3 /path/to/Sample3.SpliSER.tsv  /path/to/bams/Sample3.bam
 Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 
 ```
-* The samplesFile parameter changed from -s to -S in v0.1.3 onwards
 
 * The **outputPath** needs to end with the sample prefix, so if you are processing samples for a WT vs mutant analysis, your output path might read '-o /path/to/directory/WTvsMut'; this will produce a file WTvsMut.combined.tsv in the folder /path/to/directory.
 
@@ -141,6 +140,15 @@ In UNIX systems you can check this limit with:
 ulimit -n
 ```
 In these circumstances you can use the *combineShallow* command, this works the same as the *combine* but works around the file handle limit. The downside being this runs considerably slower.
+
+To improve performance you can run this command with optional parameters, which will filter out some low-coverage sites and save time. It is up to you to decide which thresholds are appropriate for your downstream analyses.
+
+| Optional Parameter      | Description |
+| ----------- | ----------- |
+| -m &nbsp;    \--minSamples  | For any given splice site, the minimum number of samples passing the --minReads filter in order for a site to be kept in the analysis - default: 0 |
+| -r &nbsp;    \--minReads  | The minimum number of reads giving evidence for a splice site needed for downstream analyses - default: 10 |
+
+For example: If you don't plan to analyse splice sites which are not supported by 10+ reads in at least 50 samples. You could select "-m 50 -r 10" to skip over these sites during the combineShallow run. If your sample number is in the 1000s, this will considerably speed up the command.
 
 <br>
 <br>
@@ -182,7 +190,7 @@ By this step you should already have everything you need
   
 Help for this command can also  be viewed in terminal using:
 ```
-python SpliSER_v0.1.3.py output -h
+python SpliSER_v0.1.5.py output -h
 ```
 
 ## Further Information
