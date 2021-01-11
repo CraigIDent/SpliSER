@@ -140,9 +140,7 @@ class Site:
 		self.Gene = g
 
 	def setSSEs(self, values):
-		print("setting SSEs")
 		self.SSEs = values
-		print(self.SSEs)
 
 	def setSSE(self, value, sample):
 		self.SSEs[sample] = value
