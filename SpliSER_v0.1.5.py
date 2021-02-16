@@ -1135,7 +1135,8 @@ def GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSample
 	#open the datafile
 	comboFile = open(combinedFile, 'r')
 	#skip the header
-	comboFile.next()
+	#comboFile.next()
+	nextLine = next(comboFile,None)
 	while not fileFinished: #go until the file is exhausted
 		currentVals = []
 		for idx, t in enumerate(allTitles):
