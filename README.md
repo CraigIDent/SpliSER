@@ -3,7 +3,7 @@ Splice-site Strength Estimation using RNA-seq
 
 <br>
 
-version 0.1.5 (11th January 2020)
+version 0.1.6 (7th April 2021)
 
 <br>
 
@@ -50,6 +50,7 @@ There are several optional parameters, which add gene annotations to the output 
 | -t &nbsp;   \--annotationType | The type of feature to be extracted from the annotation file. (Default: gene). |
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.  (Default : fr).|
+| --beta2Cryptic | Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).|
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
 | -g &nbsp; \--gene | Limit the analysis to one locus, given by name matching the annotation file *eg.* '-g ENSMUSG00000024949'. (If using this parameter you must also specify the --chromosome and --maxIntronSize) |
 | -m &nbsp; \--maxIntronSize | **only required if using -g** This is the maximum intron size used in your alignment (If you're unsure, take a maximum intron size for your species *eg.* '-m 6000' for *A.thaliana* or '-m 500000' for *M.musculus*).  |
@@ -68,7 +69,7 @@ There are several optional parameters, which add gene annotations to the output 
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.5.py process -h
+python SpliSER_v0.1.6.py process -h
 ```
 <br>
 <br>
@@ -120,6 +121,7 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR (Default : fr)|
 | -g &nbsp; \--gene | Limit the analysis to one locus *eg.* '-g ENSMUSG00000024949'(only use this if you also applied the --gene parameter in the previous process step) (Default: All) |
+| --beta2Cryptic | Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).|
 
 * The -1 / \--firstChrom parameter is redundant as of v0.1.3. The combine command now uses a topological sort to infer the order of genomic regions present in the input files.
 
@@ -127,7 +129,7 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.3.py combine -h
+python SpliSER_v0.1.6.py combine -h
 ```
 <br>
 
@@ -147,8 +149,10 @@ To improve performance you can run this command with optional parameters, which 
 | ----------- | ----------- |
 | -m &nbsp;    \--minSamples  | For any given splice site, the minimum number of samples passing the --minReads filter in order for a site to be kept in the analysis - default: 0 |
 | -r &nbsp;    \--minReads  | The minimum number of reads giving evidence for a splice site needed for downstream analyses - default: 10 |
+| -r &nbsp;    \--minSSE  | The minimum SSE for a splice site to count towards the --minSamples filter - default: 0.00 |
 
-For example: If you don't plan to analyse splice sites which are not supported by 10+ reads in at least 50 samples. You could select "-m 50 -r 10" to skip over these sites during the combineShallow run. If your sample number is in the 1000s, this will considerably speed up the command.
+For example: If you don't plan to analyse splice sites which are not supported by 10+ reads in at least 50 samples. You could select "-m 50 -r 10" to skip over these sites during the combineShallow run. If your sample number is in the 1000s, this will considerably speed up the command. 
+Further, if you don't care to analyse sites which vary from 0.00 to 0.002, you can select "-e 0.05" to ignore those sites which never get an SSE above that threshold.
 
 <br>
 <br>
@@ -190,7 +194,7 @@ By this step you should already have everything you need
   
 Help for this command can also  be viewed in terminal using:
 ```
-python SpliSER_v0.1.5.py output -h
+python SpliSER_v0.1.6.py output -h
 ```
 
 ## Further Information
