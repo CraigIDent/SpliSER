@@ -141,7 +141,7 @@ In UNIX systems you can check this limit with:
 ```
 ulimit -n
 ```
-In these circumstances you can use the *combineShallow* command, this works the same as the *combine* but works around the file handle limit. The downside being this runs considerably slower.
+In these circumstances you can use the *combineShallow* command, this works the same as the *combine* but works around the file handle limit. The downside being this is more memory intensive.
 
 To improve performance you can run this command with optional parameters, which will filter out some low-coverage sites and save time. It is up to you to decide which thresholds are appropriate for your downstream analyses.
 
@@ -149,7 +149,7 @@ To improve performance you can run this command with optional parameters, which 
 | ----------- | ----------- |
 | -m &nbsp;    \--minSamples  | For any given splice site, the minimum number of samples passing the --minReads filter in order for a site to be kept in the analysis - default: 0 |
 | -r &nbsp;    \--minReads  | The minimum number of reads giving evidence for a splice site needed for downstream analyses - default: 10 |
-| -r &nbsp;    \--minSSE  | The minimum SSE for a splice site to count towards the --minSamples filter - default: 0.00 |
+| -e &nbsp;    \--minSSE  | The minimum SSE for a splice site to count towards the --minSamples filter - default: 0.00 |
 
 For example: If you don't plan to analyse splice sites which are not supported by 10+ reads in at least 50 samples. You could select "-m 50 -r 10" to skip over these sites during the combineShallow run. If your sample number is in the 1000s, this will considerably speed up the command. 
 Further, if you don't care to analyse sites which vary from 0.00 to 0.002, you can select "-e 0.05" to ignore those sites which never get an SSE above that threshold.
