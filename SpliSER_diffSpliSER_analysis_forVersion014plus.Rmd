@@ -1,5 +1,5 @@
 ---
-title: "diffSpliSE analysis"
+title: "diffSpliSER analysis"
 author: "Craig I Dent"
 date: "23/01/2020"
 output: html_document
