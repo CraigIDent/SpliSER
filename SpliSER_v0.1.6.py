@@ -139,7 +139,7 @@ def binary_gene_search(array, pos, strand):
 	stuck = False
 	found = False
 	while stuck == False and found == False:
-		if int(pos) >= int(array[idx].getLeftPos()) and int(pos) <= int(array[idx].getRightPos()) and strand == array[idx].getStrand() : #if one site in junction lie within the given gene
+		if int(pos) >= int(array[idx].getLeftPos()) and int(pos) <= int(array[idx].getRightPos()) and (strand == array[idx].getStrand() or (strand != '+' and strand != '-') ): #if one site in junction lie within the given gene
 			found = True
 			break
 		elif int(pos) >= int(array[idx].getRightPos()): #else if position is greater than gene boundaries, bisect above current pos
@@ -160,8 +160,8 @@ def binary_gene_search(array, pos, strand):
 	if found == False and stuck == True: # last ditch check up and downstream
 		for i in range(-3,3):
 			if idx+i >= 0 and idx+i < len(array)-1 and int(pos) >= int(array[idx+i].getLeftPos()) and int(pos) <= int(array[idx+i].getRightPos()) : #if one site in junction lie within the given gene
-				#always consider gene strand
-				if strand == array[idx+i].getStrand(): #if the strand also matches, we've found it and can go ahead
+				#always consider gene strand, unless site strand is unknown.
+				if strand == array[idx+i].getStrand() or (strand != '+' and strand != '-'): #if the strand also matches, we've found it and can go ahead
 					found = True
 					stuck = False
 					idx = idx+i
