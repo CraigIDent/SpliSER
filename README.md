@@ -171,12 +171,12 @@ By this step you should already have everything you need
 | ----------- | ----------- |
 | -S &nbsp;    \--samplesFile      | The path to the samples file you used in the previous step, used here to access the sample names|
 | -C &nbsp;    \--combinedFile  | The path to the combined.tsv file that you generated in the previous step|
-| -t &nbsp;    \--outputType  | 'GWAS' for a SpliSE-QTL analysis, 'diffSpliSE' for traditional comparison between groups|
+| -t &nbsp;    \--outputType  | 'GWAS' for a SpliSE-QTL analysis, 'DiffSPliSER' for traditional comparison between groups|
 | -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting output file will be written|
 
 * The *outputType* command tells SpliSER to format results in one of two ways. 
   * **GWAS** Will produce an individual file for each splice site. This is a two coloumn file containing only the sample name, and the associated SSE value. These files can then be further processed by the user as input for their preferred GWAS pipeline.
-  * **DiffSpliSE** Will produce a single file with one row for each splice site, this file can be directly taken as input for the DiffSpliSE.Rmd pipeline script for differential splicing analysis between groups.
+  * **DiffSPliSER** Will produce a single file with one row for each splice site, this file can be directly taken as input for the DiffSPliSER.Rmd pipeline script for differential splicing analysis between groups.
   * The samplesFile parameter changed from -s to -S in v0.1.3 onwards
 <br>
 

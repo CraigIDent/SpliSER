@@ -1125,9 +1125,9 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 	#loop back
 	print('Filled in Beta read counts for {} Sites not detected in some samples'.format(filledCount))
 
-def diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene):
+def DiffSpliSER_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 
-	outDiff = open(outputPath+str(qGene)+".diffSpliSE.tsv", "w+")
+	outDiff = open(outputPath+str(qGene)+".DiffSpliSER.tsv", "w+")
 	correct = True
 	fileFinished = False
 	#record the samples we're assessing
@@ -1240,8 +1240,8 @@ def GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSample
 				filtered.close()
 
 def output(outputType, samplesFile,combinedFile, outputPath, minReads, qGene, minSamples):
-	if outputType == 'diffSpliSE':
-		diffSpliSE_output(samplesFile,combinedFile, outputPath, minReads, qGene)
+	if outputType == 'DiffSpliSER':
+		DiffSpliSER_output(samplesFile,combinedFile, outputPath, minReads, qGene)
 	if outputType == 'GWAS':
 		GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSamples)
 
@@ -1291,8 +1291,8 @@ if __name__ == "__main__":
 	parser_output = subparsers.add_parser('output')
 	parser_output.add_argument('-S', '--samplesFile', dest='samplesFile', required=True, help="the three-column .tsv file you used to combine the samples in the previous step")
 	parser_output.add_argument('-C', '--combinedFile', dest='combinedFile', required=True, help="a SpliSER .combined.tsv file containing the splice site information for each sample")
-	parser_output.add_argument('-t', '--outputType', dest='outputType', required = True, help="Type of output file: -t diffSpliSE will output a file ready for differential splicing analysis. -t GWAS will output an SSE phenotype file for each Splice Site (writes to outputPath folder, ignoring file prefix)")
-	parser_output.add_argument('-o', '--outputPath', dest='outputPath', required=True, help="Absolute path to an output folder(ie ending in a slash), iff using -t diffSPliSE also provide a file_prefix where SpliSER will write the output .tsv file")
+	parser_output.add_argument('-t', '--outputType', dest='outputType', required = True, help="Type of output file: -t DiffSpliSER will output a file ready for differential splicing analysis. -t GWAS will output an SSE phenotype file for each Splice Site (writes to outputPath folder, ignoring file prefix)")
+	parser_output.add_argument('-o', '--outputPath', dest='outputPath', required=True, help="Absolute path to an output folder(ie ending in a slash), iff using -t DiffSpliSER also provide a file_prefix where SpliSER will write the output .tsv file")
 	parser_output.add_argument('-r', '--minReads', dest='minReads',required=False, nargs='?', default=10, type=int, help="The minimum number of reads giving evidence for a splice site in a given sample, below which SpliSER will report NA - default: 10")
 	parser_output.add_argument('-g', '--gene', dest='qGene', required=False, nargs='?', default='All', type=str, help="optional:Limit SpliSER to splice sites falling in a single locus")
 	parser_output.add_argument('-m', '--minSamples', dest='minSamples', required=False, nargs='?', default=50, type=int, help="optional: when using --outputType GWAS: the minimum number of samples passing the read filter for a splice site file to be written")
