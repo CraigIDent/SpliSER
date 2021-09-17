@@ -49,8 +49,7 @@ SpliSER_SSE <- SpliSER_narm %>% dplyr:: select(grep("_SSE", names(SpliSER_narm))
 SpliSER_SSE$meanSSE <- rowMeans(SpliSER_SSE)
 SpliSER_SSE
 
-SpliSER_filt <- SpliSER_narm[SpliSER_SSE$meanSSE>0.05,] 
-SpliSER_filt <- SpliSER_narm[SpliSER_SSE$meanSSE<0.95,]
+SpliSER_filt <- SpliSER_narm[SpliSER_SSE$meanSSE>0.05 & SpliSER_SSE$meanSSE<0.95,] 
 SpliSER_filt
 
 ```
