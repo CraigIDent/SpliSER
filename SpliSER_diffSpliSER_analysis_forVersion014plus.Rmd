@@ -135,4 +135,5 @@ write.table(hits_intersect, file = "All.tsv", sep='\t', row.names = FALSE, col.n
 #ENTER ABSOLUTE PATH TO OUTPUT FOR DIFF. SPLICED SITES HERE
 #                                     V
 write.table(hits_SSEfiltered, file = "BHhits_SSEFiltered.tsv", sep='\t', row.names = FALSE, col.names = TRUE, quote=FALSE)
+
 ```

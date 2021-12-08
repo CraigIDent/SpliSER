@@ -3,7 +3,7 @@ Splice-site Strength Estimation using RNA-seq
 
 <br>
 
-version 0.1.7 (19th October 2021)
+version 0.1.6 (7th April 2021)
 
 <br>
 
@@ -49,7 +49,7 @@ There are several optional parameters, which add gene annotations to the output 
 | -A &nbsp;    \--annotationFile | The path to a GFF or GTF file mathcing the genome to which your RNA-seq data was aligned|
 | -t &nbsp;   \--annotationType | The type of feature to be extracted from the annotation file. (Default: gene). |
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
-| -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
+| -s &nbsp; \--strandedType | Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.  (Default : fr).|
 | --beta2Cryptic | Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).|
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
 | -g &nbsp; \--gene | Limit the analysis to one locus, given by name matching the annotation file *eg.* '-g ENSMUSG00000024949'. (If using this parameter you must also specify the --chromosome and --maxIntronSize) |
@@ -69,7 +69,7 @@ There are several optional parameters, which add gene annotations to the output 
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.7.py process -h
+python SpliSER_v0.1.6.py process -h
 ```
 <br>
 <br>
@@ -119,7 +119,7 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 | Optional Parameter      | Description |
 | ----------- | ----------- |
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
-| -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
+| -s &nbsp; \--strandedType | Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR (Default : fr)|
 | -g &nbsp; \--gene | Limit the analysis to one locus *eg.* '-g ENSMUSG00000024949'(only use this if you also applied the --gene parameter in the previous process step) (Default: All) |
 | --beta2Cryptic | Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).|
 
@@ -129,7 +129,7 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.7.py combine -h
+python SpliSER_v0.1.6.py combine -h
 ```
 <br>
 
@@ -194,7 +194,7 @@ By this step you should already have everything you need
   
 Help for this command can also  be viewed in terminal using:
 ```
-python SpliSER_v0.1.7.py output -h
+python SpliSER_v0.1.6.py output -h
 ```
 
 ## Further Information

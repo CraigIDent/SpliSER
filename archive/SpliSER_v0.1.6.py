@@ -78,7 +78,7 @@ def createGenes(annotation, aType, qGene):
 	N/A
 	"""
 	geneCounter = 0
-	for line in HTSeq.GFF_Reader(annotation,'r'):
+	for line in HTSeq.GFF_Reader(annotation):
 		if line.type == 'gene':
 			GeneName = line.name
 			chrom = line.iv.chrom
