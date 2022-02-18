@@ -1345,7 +1345,7 @@ if __name__ == "__main__":
 		print(kwargs.get('qGene'))
 		print(kwargs.get('annotationFile'))
 		parser.error("--gene requires --annotationFile and --maxIntronSize")
-	elif (command == 'process' or command == 'combine' or command =='combineShallow') and (kwargs.get('strandedType') is None):
+	elif (command == 'process' or command == 'combine' or command =='combineShallow') and (kwargs.get('isStranded') is True) and (kwargs.get('strandedType') is None):
 		parser.error("--isStranded requires parameter --strandedType/-s as fr or rf")
 	else: #otherwise
 		# call appropriate functions
