@@ -1,10 +1,39 @@
 #site_ops.py
-
+import pysam
 import bisect
 from operator import add, truediv, mul, sub
 from Gene_Site_Iter_Graph_v0_1_8 import Site
 from binary_searches_v1_dev import binary_gene_search, binary_site_search
 
+def check_strand(strandedType, SAMflag, siteStrand):
+    '''
+    Takes the flag element of a SAM and determines if that read originated from the same strand as the splice site
+    '''
+    if strandedType == "fr":
+        if (SAMflag & 64) or not (SAMflag & 1): #If first in pair, or not paired read
+            if (SAMflag & 16):                      #If read reverse strand
+                readStrand = "-"
+            else:
+                readStrand = "+"
+        else:                                   #else (if paired and second in pair)
+            if (SAMflag & 16):                      #If read is reverse strand
+                readStrand = "+"    
+            else:
+                readStrand = "-"
+
+    if strandedType == "rf":                  #Flip everything if it is "rf" library prep
+        if (SAMflag & 64) or not (SAMflag & 1):
+            if (SAMflag & 16):
+                readStrand = "+"
+            else:
+                readStrand = "-"
+        else:
+            if (SAMflag & 16):
+                readStrand = "-"
+            else:
+                readStrand = "+"
+
+    return (readStrand == siteStrand)
 
 def findAlphaCounts(bedFile, qChrom, qGene, maxIntronSize, isStranded, NA_gene, sample=0, numsamples=1, QUERY_gene=None, chrom_index=None, gene2D_array=None, site2D_array=None):
     """
@@ -162,6 +191,198 @@ def findAlphaCounts(bedFile, qChrom, qGene, maxIntronSize, isStranded, NA_gene, 
                     site_left.addPartnerCount(site_right.getPos(), alpha, sample)
                     site_right.addPartner(site_left)
                     site_right.addPartnerCount(site_left.getPos(), alpha, sample)
+    print("Sites assessed:\t"+str(assessedCounter))
+    print("Sites found:\t\t\t"+str(newCounter))
+    print("Sites assigned to a Gene:\t"+str(foundCounter))
+    num =0
+    for s in site2D_array:
+        num = num + len(s)
+    print("Sites:\t\t\t"+str(num))
+
+    #Find competitorPositions of each site
+    def findCompetitorPos():
+        for c_index, c in enumerate(chrom_index):
+            for site in site2D_array[c_index]:
+                sPos = site.getPos()
+                for p in site.getPartners():
+                    for c in p.getPartners():
+                        cPos = c.getPos()
+                        if cPos != sPos:
+                            site.addCompetitorPos(cPos)
+
+    print('\n\nStep 1B: Identifying Competitors of each splice site...')
+    findCompetitorPos()
+    print('Competitors updated')
+    return chrom_index, gene2D_array, site2D_array
+
+
+def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,strandedType, NA_gene, sample=0, numsamples=1, QUERY_gene=None, chrom_index=None, gene2D_array=None, site2D_array=None):
+    """
+    Find junctions in bam file, record the number of reads showing usage (alpha1 reads) of each splice site forming the junction.
+
+    Parameters
+    ----------
+    bAMFile : str
+        The absolute path to a .BAM file for a given alignment.
+    qChrom : str
+        Chromosome to restrict analysis to, or 'All' for full genome.
+    qGene : str
+        Gene of interest, or 'All'.
+    maxIntronSize : int
+        Max intron size used for filtering junctions near gene boundaries.
+    isStranded : bool
+        Whether to consider strand in site-gene mapping.
+    NA_gene : Gene
+        Placeholder gene object used when no gene is found.
+    sample : int, default=0
+        The index of this sample in the total sample set.
+    numsamples : int, default=1
+        Total number of samples being processed.
+    QUERY_gene : Gene or None
+        If a specific gene is targeted, this should be its object.
+    chrom_index : list
+        List of chromosomes already seen (can be empty).
+    gene2D_array : list
+        2D list of genes indexed by chromosome.
+    site2D_array : list
+        2D list of splice sites indexed by chromosome.
+
+    Returns
+    -------
+    tuple
+        (chrom_index, gene2D_array)
+    """
+    print('Processing sample '+ str(int(sample)+1)+' out of '+str(numsamples))
+    #Initialisations
+    lineCounter = 0
+    left_alphaCount = 0
+    right_alphaCount = 0
+    foundCounter = 0
+    newCounter = 0
+    duplicateCounter = 0
+    assessedCounter = 0
+    left_site_new = True
+    right_site_new = True
+    left_site_idx = -1
+    right_site_idx = -1
+    print(QUERY_gene)
+    if QUERY_gene.getLeftPos != None:
+        print("Query gene:",QUERY_gene)
+    else:
+        print("Query gene:","All")
+    #Load up the bam file
+    bam = pysam.AlignmentFile(bamFile, "rb")
+    #Get names of chromosomes
+    chroms = bam.references
+
+    for chrom in chroms:
+        if chrom not in chrom_index: #Add chromsome to index if not already there (sometimes there are no annotated genes in a scaffold)
+                chrom_index.append(chrom)
+                site2D_array.append([])
+                gene2D_array.append([])
+        if qChrom == chrom or qChrom == "All":
+            chrom_idx = chrom_index.index(str(chrom))
+
+            #If this is a stranded analysis, then make a generator for the forward and reverse strand reads (accounting for paired-end reads)
+            #and package them up in tuples with the appropriate strand designation
+            if isStranded:
+                bamgen_plus = (read for read in bam.fetch(chrom) if check_strand(strandedType,read.flag,"+") and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
+                bamgen_minus = (read for read in bam.fetch(chrom) if check_strand(strandedType,read.flag,"-") and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
+                Bamgens =[(bamgen_plus,"+"),(bamgen_minus,"-")]
+            else:
+                bamgen=(read for read in bam.fetch(chrom) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
+                Bamgens = [(bamgen,"?")]
+    
+            #Now iterate over Bamgens to fill in splice sites, where b is the bamgen tuple that we made before (linking the bam gen to the strand value)
+            for b,strand in Bamgens:
+                print("processing region:",chrom," strand:",strand)
+                introns=bam.find_introns(b)
+                for i in introns:
+                    LinQGene = False
+                    RinQGene = False
+                    leftpos = i[0]
+                    rightpos = i[1]
+                    alpha = introns[i]
+                    strand = strand
+
+                    if qGene != 'All': # if we are chasing a particular gene
+                        lPosAdj = leftpos+maxIntronSize
+                        rPosAdj = rightpos-maxIntronSize
+                        #check if either site is within an intron length of the gene boundaries
+                        if lPosAdj >= QUERY_gene.getLeftPos() and leftpos <= QUERY_gene.getRightPos():
+                            LinQGene = True
+                        if rPosAdj <= QUERY_gene.getRightPos() and rightpos >= QUERY_gene.getLeftPos():
+                            RinQGene = True
+
+                    #if we are taking any gene, or if the sites are query-gene-associated
+                    if qGene =="All" or LinQGene or RinQGene:
+    
+                        if len(site2D_array[chrom_idx])>0:
+                            left_site_idx = binary_site_search(site2D_array[chrom_idx],leftpos,strand,isStranded)
+                            right_site_idx = binary_site_search(site2D_array[chrom_idx],rightpos,strand,isStranded)
+    
+                        else:
+                            left_site_idx = -1
+                            right_site_idx = -1
+    
+                        assessedCounter += 2
+                        #FOR EACH SITE
+                        site_left = None
+                        site_right = None
+                        for num, site_info in enumerate([[leftpos,left_site_idx],[rightpos,right_site_idx]]):
+                            ss = None
+                            # if this is a new site
+                            if site_info[1] == -1:
+    
+                                if num == 0:
+                                    left_site_new = True
+                                if num == 1:
+                                    right_site_new = True
+    
+                                newCounter = newCounter + 1
+                                gene_idx = binary_gene_search(gene2D_array[chrom_idx], site_info[0], strand,isStranded)
+                                #Check if we found a gene for site
+                                if gene_idx >=0:
+                                    gene = gene2D_array[chrom_idx][gene_idx]
+                                    foundCounter +=1
+                                else:
+                                    gene = NA_gene
+                                #Make the site
+                                ss = Site(
+                                        chromosome = str(chrom),
+                                        pos = site_info[0],
+                                        samples = numsamples,
+                                        strand = strand,
+                                        source = '',
+                                        isStranded=isStranded
+                                        )
+                                ss.setGene(gene)
+                                #add the site in it's ordered position
+                                #bisect.insort(site2D_array[chrom_idx],ss)
+                            else: #If the site has been recorded already
+                                if num == 0:
+                                    left_site_new = False
+                                    duplicateCounter += 1
+                                if num == 1:
+                                    right_site_new = False
+                                    duplicateCounter += 1
+                                ss = site2D_array[chrom_idx][site_info[1]]
+                            #record the alpha read counts
+                            ss.addAlphaCount(int(alpha), sample)
+                            if num == 0: # if the left site
+                                site_left = ss
+                            else: #if the right site
+                                site_right = ss
+    
+                        if left_site_new:
+                            bisect.insort(site2D_array[chrom_idx],site_left)
+                        if right_site_new:
+                            bisect.insort(site2D_array[chrom_idx],site_right)
+                            #add sites as partners for eachother, and record the shared alpha
+                        site_left.addPartner(site_right)
+                        site_left.addPartnerCount(site_right.getPos(), alpha, sample)
+                        site_right.addPartner(site_left)
+                        site_right.addPartnerCount(site_left.getPos(), alpha, sample)
     print("Sites assessed:\t"+str(assessedCounter))
     print("Sites found:\t\t\t"+str(newCounter))
     print("Sites assigned to a Gene:\t"+str(foundCounter))

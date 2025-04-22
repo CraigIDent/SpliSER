@@ -17,7 +17,7 @@ from operator import add, truediv, mul, sub
 import bisect
 from ast import literal_eval
 
-from site_ops_v1_dev import findAlphaCounts, findBeta2Counts, calculateSSE
+from site_ops_v1_dev import findAlphaCounts_pysam, findBeta2Counts, calculateSSE
 from gene_creator_v1_dev import createGenes
 from bam_parser_v1_dev import checkBam
 digit_pattern = re.compile(r'\D')
@@ -106,12 +106,14 @@ def process(inBAM, inBed, outputPath, qGene, qChrom, maxIntronSize, annotationFi
 		print('\n\nStep 0: Creating Genes from Annotation...')
 		chrom_index, gene2D_array, QUERY_gene, NA_gene = createGenes(annotationFile, aType, qGene)
 
+	#TODO: Add a checker here for qGene not being found
+
 	print(('\n\nPreparing Splice Site Arrays'))
 	for x in chrom_index:
 		site2D_array.append([])
 
 	print('\n\nStep 1A: Finding Splice Sites / Counting Alpha reads...')
-	chrom_index, gene2D_array, site2D_array = findAlphaCounts(inBed,qChrom, qGene, int(maxIntronSize), isStranded, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array) #We apply theqGene filter here, where the splice site objects are made
+	chrom_index, gene2D_array, site2D_array = findAlphaCounts_pysam(inBAM,qChrom, qGene, int(maxIntronSize), isStranded, strandedType, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array) #We apply theqGene filter here, where the splice site objects are made
 	print('\n\nStep 2: Finding Beta reads')
 	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, isbeta2Cryptic,chrom_index, gene2D_array,site2D_array)
 
