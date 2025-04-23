@@ -1,6 +1,7 @@
 #site_ops.py
 import pysam
 import bisect
+from collections import Counter
 from operator import add, truediv, mul, sub
 from Gene_Site_Iter_Graph_v0_1_8 import Site
 from binary_searches_v1_dev import binary_gene_search, binary_site_search
@@ -34,6 +35,28 @@ def check_strand(strandedType, SAMflag, siteStrand):
                 readStrand = "+"
 
     return (readStrand == siteStrand)
+
+
+def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter):
+    # Create a copy to avoid modifying inputs directly
+    introns_plus = introns_plus.copy()
+    introns_minus = introns_minus.copy()
+
+    # Check for overlapping introns by (start, end) tuple
+    shared_introns = set(introns_plus.keys()) & set(introns_minus.keys())
+
+    for intron in shared_introns:
+        plus_count = introns_plus[intron]
+        minus_count = introns_minus[intron]
+
+        if plus_count >= minus_count:
+            introns_plus[intron] += minus_count
+            del introns_minus[intron]
+        else:
+            introns_minus[intron] += plus_count
+            del introns_plus[intron]
+
+    return introns_plus, introns_minus
 
 def findAlphaCounts(bedFile, qChrom, qGene, maxIntronSize, isStranded, NA_gene, sample=0, numsamples=1, QUERY_gene=None, chrom_index=None, gene2D_array=None, site2D_array=None):
     """
@@ -265,11 +288,12 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
     right_site_new = True
     left_site_idx = -1
     right_site_idx = -1
-    print(QUERY_gene)
-    if QUERY_gene.getLeftPos != None:
-        print("Query gene:",QUERY_gene)
-    else:
+    dontCollapse = False
+    if qGene == "All":
         print("Query gene:","All")
+    else:
+        print("Query gene:",QUERY_gene)
+        
     #Load up the bam file
     bam = pysam.AlignmentFile(bamFile, "rb")
     #Get names of chromosomes
@@ -288,15 +312,21 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
             if isStranded:
                 bamgen_plus = (read for read in bam.fetch(chrom) if check_strand(strandedType,read.flag,"+") and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
                 bamgen_minus = (read for read in bam.fetch(chrom) if check_strand(strandedType,read.flag,"-") and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
-                Bamgens =[(bamgen_plus,"+"),(bamgen_minus,"-")]
+                
+                introns_plus=bam.find_introns(bamgen_plus)
+                introns_minus=bam.find_introns(bamgen_minus)
+                if not dontCollapse:
+                    print(chrom, "Collapsing duplicate introns to the majority strand..")
+                    introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus)
+                Intron_info =[(introns_plus,"+"),(introns_minus,"-")]
             else:
                 bamgen=(read for read in bam.fetch(chrom) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
-                Bamgens = [(bamgen,"?")]
+                introns=bam.find_introns(b)
+                Intron_info = [(introns,"?")]
     
             #Now iterate over Bamgens to fill in splice sites, where b is the bamgen tuple that we made before (linking the bam gen to the strand value)
-            for b,strand in Bamgens:
-                print("processing region:",chrom," strand:",strand)
-                introns=bam.find_introns(b)
+            for introns,strand in Intron_info:
+                print("processing introns in region:",chrom, " strand:", strand)
                 for i in introns:
                     LinQGene = False
                     RinQGene = False
@@ -325,7 +355,7 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                             left_site_idx = -1
                             right_site_idx = -1
     
-                        assessedCounter += 2
+                        assessedCounter += 1
                         #FOR EACH SITE
                         site_left = None
                         site_right = None
@@ -383,13 +413,18 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                         site_left.addPartnerCount(site_right.getPos(), alpha, sample)
                         site_right.addPartner(site_left)
                         site_right.addPartnerCount(site_left.getPos(), alpha, sample)
-    print("Sites assessed:\t"+str(assessedCounter))
+
+    print("Done")
+
+
+
+    print("Introns assessed:\t"+str(assessedCounter))
     print("Sites found:\t\t\t"+str(newCounter))
     print("Sites assigned to a Gene:\t"+str(foundCounter))
     num =0
     for s in site2D_array:
         num = num + len(s)
-    print("Sites:\t\t\t"+str(num))
+    #print("Sites:\t\t\t"+str(num))
 
     #Find competitorPositions of each site
     def findCompetitorPos():
@@ -471,17 +506,27 @@ def findBeta2Counts(site, numSamps):
     site.updateBeta2Weighted(beta2CrypticWeighted)
 
 
-def calculateSSE(site, isbeta2Cryptic):
+def calculateSSE(site):
 
     alpha = list(site.getAlphaCounts())
     beta1 = site.getBeta1Counts()
     beta2Simple = site.getBeta2SimpleCounts()
     betas = [x + y for x, y in zip(beta1, beta2Simple)]
 
-    if isbeta2Cryptic:
-        beta2w = site.getBeta2WeightedCounts()
-        betas = [x + y for x, y in zip(betas, beta2w)]
+    #if isbeta2Cryptic:
+    #    beta2w = site.getBeta2WeightedCounts()
+    #    betas = [x + y for x, y in zip(betas, beta2w)]
 
     denominator = [x + y for x, y in zip(alpha, betas)]
 
     site.setSSEs(trueDivCatchZero(list(alpha), list(denominator)))
+
+
+
+
+
+
+
+
+
+

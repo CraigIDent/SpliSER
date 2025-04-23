@@ -19,7 +19,7 @@ from ast import literal_eval
 
 from site_ops_v1_dev import findAlphaCounts_pysam, findBeta2Counts, calculateSSE
 from gene_creator_v1_dev import createGenes
-from bam_parser_v1_dev import checkBam
+from bam_parser_v1_dev import checkBam_pysam
 digit_pattern = re.compile(r'\D')
 
 #chrom_index = []
@@ -87,15 +87,15 @@ def processSites(inBAM, qChrom, isStranded, strandedType,isbeta2Cryptic, chrom_i
 		if qChrom == c or qChrom =="All":
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
 				#Go assign Beta 1 type reads from BAM file
-				checkBam(inBAM, site, sample, isStranded, strandedType)
+				checkBam_pysam(inBAM, site, sample, isStranded, strandedType)
 			#Once this is done for all sites, we can calculate SSE
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
-				findBeta2Counts(site, numsamples)
-				calculateSSE(site,isbeta2Cryptic)
+				#findBeta2Counts(site, numsamples)
+				calculateSSE(site)
 	return chrom_index, gene2D_array,site2D_array
 
 
-def process(inBAM, inBed, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, isbeta2Cryptic, site2D_array=[]):
+def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, isbeta2Cryptic, site2D_array=[]):
 	print('Processing')
 	if isStranded:
 		print('Stranded Analysis {}'.format(strandedType))
@@ -704,7 +704,6 @@ if __name__ == "__main__":
 	#Parser for arguments when user calls command 'process'
 	parser_process = subparsers.add_parser('process')
 	parser_process.add_argument('-B', '--BAMFile', dest='inBAM', help="The mapped RNA-seq file in BAM format", required=True)
-	parser_process.add_argument('-b', '--bedFile', dest='inBed', help="The Tophat-style splice junction bed file", required=True)
 	parser_process.add_argument('-o', '--outputPath', dest='outputPath', help="Absolute path, including file prefix where SpliSER will write the .SpliSER.tsv file", required=True)
 	parser_process.add_argument('-A', '--annotationFile', dest='annotationFile', help="optional: gff3 or gtf file matching the reference genome used for alignment", required=False)
 	parser_process.add_argument('-t', '--annotationType', dest='aType', nargs='?', default='gene', type=str, help="optional: The feture to be extracted from the annotation file - default: gene", required=False)
