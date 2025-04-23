@@ -1,7 +1,7 @@
 # gene_loader.py
 import bisect
 import HTSeq
-from Gene_Site_Iter_Graph_v0_1_8 import Gene
+from Gene_Site_Iter_Graph_v1_dev import Gene
 
 def createGenes(annotation, aType, qGene):
     """

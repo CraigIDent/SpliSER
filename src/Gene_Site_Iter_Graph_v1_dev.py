@@ -6,6 +6,7 @@ from operator import add, truediv, mul, sub
 import bisect
 import numpy as np
 from collections import defaultdict
+#print("FInally some answers?")
 
 class Gene:
 
@@ -97,7 +98,7 @@ class Gene:
 
 class Site:
 	#Slot attributes so __dict__ is not required for each
-	__slots__ = ('chromosome','samples','pos','source','alphaCounts', 'beta1Counts','beta2SimpleCounts','beta2CrypticCounts','beta2Weighted','Partners','CompetitorPos','PartnerCounts','PartnerBeta2DoubleCounts','SSEs','strand','beta2weights','Gene','isStranded')
+	__slots__ = ('chromosome','samples','pos','source','alphaCounts', 'beta1Counts','beta2SimpleCounts','Partners','CompetitorPos','MutuallyExclusivePos','PartnerCounts','PartnerBeta2DoubleCounts','SSEs','strand','Gene','isStranded','multiGeneFlag')
 
 	def __init__(self, chromosome, pos, samples, strand, source, isStranded):
 		self.chromosome = chromosome
@@ -107,18 +108,16 @@ class Site:
 		self.alphaCounts = [0]*int(samples)
 		self.beta1Counts = [0]*int(samples)
 		self.beta2SimpleCounts = [0]*int(samples) #counts where we observe non-usage of the target site, along with usage of a partner and a competitor.
-		self.beta2CrypticCounts = [0]*int(samples)
-		self.beta2Weighted = [0.000]*int(samples)
 		self.Partners = [] # array of Site objects
 		self.CompetitorPos = [] #array of Site Positions
+		self.MutuallyExclusivePos = [] #array of Site Positions
 		self.PartnerCounts = {} #Dictionary, where key is Partner Position and value is an array of Counts across samples.
 		self.PartnerBeta2DoubleCounts = {}
 		self.SSEs= [0.000]*int(samples)
 		self.strand = strand
-		self.beta2weights = {} # Dictionary where key is Partner Position and value is a weight between 0 and 1
 		self.Gene = None
 		self.isStranded = isStranded #marks whether or not this site is being used in a stranded analysis
-
+		self.multiGeneFlag = False
 #Operators for Sites
 	def __lt__(self, other):
 		if self.isStranded: #if a stranded analysis
@@ -214,9 +213,8 @@ class Site:
 	def setSSE(self, value, sample):
 		self.SSEs[sample] = value
 
-	def updateBeta2Weighted(self, values):
-		self.beta2Weighted = values
-
+	def setMultiGeneFlag(self, value):
+		self.multiGeneFlag = value
 
 #BETTERS
 	def addAlphaCount(self, count, sample):
@@ -225,37 +223,16 @@ class Site:
 	def addBeta1Count(self, count, sample):
 		self.beta1Counts[sample] += count
 
-	def addBeta2CrypticCount(self, count, sample):
-		self.beta2CrypticCounts[sample] += count
-
 	def addBeta2SimpleCount(self, count, sample):
 		self.beta2SimpleCounts[sample] += count
 
 	def addBeta2SimpleCounts(self, values):
 		self.beta2SimpleCounts =[x + y for x, y in zip(self.beta2SimpleCounts, values)]
 
-	def addBeta2CrypticCounts(self, values):
-		self.beta2CrypticCounts =[x + y for x, y in zip(self.beta2CrypticCounts, values)]
-
-	def addBeta2Weighted(self, count, sample):
-		self.beta2Weighted[sample] += count
-
 	def addPartnerCount(self, sitePos, count, sample):
 		if sitePos not in self.PartnerCounts:
 			self.PartnerCounts[sitePos] = [0]*int(self.samples)
 		self.PartnerCounts[sitePos][sample] = self.PartnerCounts[sitePos][sample] + count
-
-
-	def addPartnerBeta2DoubleCount(self, sitePos, count, sample):
-		if sitePos not in self.PartnerBeta2DoubleCounts:
-			self.PartnerBeta2DoubleCounts[sitePos] = [0]*int(self.samples)
-		self.PartnerBeta2DoubleCounts[sitePos][sample] = self.PartnerBeta2DoubleCounts[sitePos][sample] + count
-
-	def addPartnerBeta2DoubleCounts(self, sitePos, values):
-		if sitePos not in self.PartnerBeta2DoubleCounts:
-			self.PartnerBeta2DoubleCounts[sitePos] = [0]*int(self.samples)
-
-		self.PartnerBeta2DoubleCounts[sitePos] =[x + y for x, y in zip(self.PartnerBeta2DoubleCounts[sitePos], values)]
 
 	def addPartner(self, site):
 		if site not in self.Partners:
@@ -264,6 +241,10 @@ class Site:
 	def addCompetitorPos(self, pos):
 		if pos not in self.CompetitorPos:
 			bisect.insort(self.CompetitorPos,int(pos))
+
+	def addMutuallyExclusivePos(self, pos):
+		if pos not in self.MutuallyExclusivePos:
+			bisect.insort(self.MutuallyExclusivePos,int(pos))
 #GETTERS
 
 	def getAlphaCount(self, sample):
@@ -278,23 +259,11 @@ class Site:
 	def getBeta1Counts(self):
 		return [int(b) for b in self.beta1Counts]
 
-	def getBeta2CrypticCount(self, sample):
-		return self.beta2CrypticCounts[sample]
-
-	def getBeta2CrypticCounts(self):
-		return self.beta2CrypticCounts
-
 	def getBeta2SimpleCount(self, sample):
 		return self.beta2SimpleCounts[sample]
 
 	def getBeta2SimpleCounts(self):
 		return self.beta2SimpleCounts
-
-	def getBeta2WeightedCount(self, sample):
-		return self.beta2Weighted[sample]
-
-	def getBeta2WeightedCounts(self):
-		return self.beta2Weighted
 
 	def getGeneName(self):
 		return self.Gene.getName()
@@ -317,9 +286,6 @@ class Site:
 	def getPartnerCounts(self):
 		return self.PartnerCounts
 
-	def getPartnerBeta2DoubleCounts(self):
-		return self.PartnerBeta2DoubleCounts
-
 	def getPartnerCount(self, sample):
 		val = {}
 		for p in self.PartnerCounts:
@@ -328,6 +294,9 @@ class Site:
 
 	def getCompetitorPos(self):
 		return self.CompetitorPos
+
+	def getMutuallyExclusivePos(self):
+		return self.MutuallyExclusivePos
 
 	def getSSE(self, sample):
 		return self.SSEs[sample]
@@ -338,7 +307,11 @@ class Site:
 	def getSource(self):
 		return self.source
 
-#END OF JUNCTION CLASS
+	def getMultiGeneFlag(self):
+		return self.multiGeneFlag
+
+#END OF SITE CLASS
+
 class Iter:
 
 	def __init__(self, File):
@@ -394,3 +367,5 @@ class Graph:
 				self.topologicalSortUtil(i,visited,stack)
 
 		return(stack)
+
+#print(Site.__module__)

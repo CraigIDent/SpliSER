@@ -1,7 +1,7 @@
 """
 SpliSER- Splice-site Strength Estimation from RNA-seq
 """
-#Version 1.0 - 23rd April 2025
+#Version 1.0 - 18th April 2025
 version = "v1.0"
 import sys
 import timeit
@@ -10,17 +10,16 @@ import subprocess
 import argparse
 import HTSeq
 import re
-#from operator import truediv
-from Gene_Site_Iter_Graph_v1_dev import Gene, Site, Iter, Graph
-
+from operator import truediv
+from Gene_Site_Iter_Graph_v0_1_8 import Gene, Site, Iter, Graph
 import numpy
-from operator import add, mul, sub
+from operator import add, truediv, mul, sub
 import bisect
 from ast import literal_eval
 
-from site_ops_v1_dev import findAlphaCounts_pysam, calculateSSE
+from site_ops_v1_dev import findAlphaCounts_pysam, findBeta2Counts, calculateSSE
 from gene_creator_v1_dev import createGenes
-from bam_parser_v1_dev import checkBam_pysam
+from bam_parser_v1_dev import checkBam
 digit_pattern = re.compile(r'\D')
 
 #chrom_index = []
@@ -41,12 +40,10 @@ char_pattern = re.compile(r'\d') # pattern, digit
 sSite = None
 #QUERY_gene = None
 
-def outputBedFile(outputPath,chrom_index, site2D_array,qGene):
+def outputBedFile(outputPath,isbeta2Cryptic,chrom_index, site2D_array):
 	outBed = open(outputPath+".SpliSER.tsv","w+")
 	#Write the header line
-	outBed.write("Region\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tNA1\tOthers\tPartners\tCompetitors\n")
-
-
+	outBed.write("Region\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2Cryptic_weighted\tPartners\tCompetitors\n")
 	for c_index, c in enumerate(chrom_index):
 		for site in site2D_array[c_index]:
 			outBed.write(str(site.getChromosome())+"\t")
@@ -57,11 +54,12 @@ def outputBedFile(outputPath,chrom_index, site2D_array,qGene):
 			outBed.write(str(site.getAlphaCount(0))+"\t")
 			outBed.write(str(site.getBeta1Count(0))+"\t")
 			outBed.write(str(site.getBeta2SimpleCount(0))+"\t")
-			if qGene !='All':
-				outBed.write("NA\t")
+			if isbeta2Cryptic:
+				outBed.write(str(site.getBeta2CrypticCount(0))+"\t")
+				outBed.write("{0:.5f}\t".format(site.getBeta2WeightedCount(0)))
 			else:
-				outBed.write(str(site.getMultiGeneFlag())+"\t")
-			outBed.write(str(site.getMutuallyExclusivePos())+"\t")
+				outBed.write("NA\t")
+				outBed.write("NA\t")
 			#outBed.write(str(site.getBeta2WeightedCount(0))+"\t")
 			outBed.write(str(site.getPartnerCount(0))+"\t")
 			outBed.write(str(site.getCompetitorPos())+"\n")
@@ -82,46 +80,22 @@ def makeSingleSpliceSite(iChrom, iPos, numSamples, iStrand, isStranded):
 				)
 			)
 
-def processSites(inBAM, qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array, sample = 0, numsamples = 1):
+def processSites(inBAM, qChrom, isStranded, strandedType,isbeta2Cryptic, chrom_index, gene2D_array,site2D_array, sample = 0, numsamples = 1):
 	print('Processing sample '+ str(int(sample)+1)+' out of '+str(numsamples))
 	for c in chrom_index:
+		print("Processing region "+str(c))
 		if qChrom == c or qChrom =="All":
-			print("Processing region "+str(c))
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
 				#Go assign Beta 1 type reads from BAM file
-				checkBam_pysam(inBAM, site, sample, isStranded, strandedType)
+				checkBam(inBAM, site, sample, isStranded, strandedType)
 			#Once this is done for all sites, we can calculate SSE
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
-				#findBeta2Counts(site, numsamples)
-				calculateSSE(site)
+				findBeta2Counts(site, numsamples)
+				calculateSSE(site,isbeta2Cryptic)
 	return chrom_index, gene2D_array,site2D_array
 
-def flagSiteGenes(chrom_index,site2D_array):
-	for c_index, c in enumerate(chrom_index):
-		SiteGeneDex={}
 
-		for site in site2D_array[c_index]:
-			SiteGeneDex[site.getPos()]=site.getGeneName()
-
-		for site in site2D_array[c_index]:
-			thisGene = site.getGeneName()
-			AssociatedGenes=set()
-			#check all partner sites
-			for pSite in site.getPartners():
-				AssociatedGenes.add(pSite.getGeneName())
-			#check all competitor sites
-			for cpos in site.getCompetitorPos():
-				AssociatedGenes.add(SiteGeneDex[cpos])
-			for mpos in site.getMutuallyExclusivePos():
-				AssociatedGenes.add(SiteGeneDex[mpos])
-			#check now if we have multiple genes involved.
-			AssociatedGenes.discard('NA')
-			if len(AssociatedGenes) >1:#if there are multiple genes here
-				print(site.getPos(),AssociatedGenes)
-				site.setMultiGeneFlag(True)
-
-
-def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, site2D_array=[]):
+def process(inBAM, inBed, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, isbeta2Cryptic, site2D_array=[]):
 	print('Processing')
 	if isStranded:
 		print('Stranded Analysis {}'.format(strandedType))
@@ -132,26 +106,21 @@ def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aTyp
 		print('\n\nStep 0: Creating Genes from Annotation...')
 		chrom_index, gene2D_array, QUERY_gene, NA_gene = createGenes(annotationFile, aType, qGene)
 
-	#TODO: Add a checker here for qGene not being found (ie mispelled)
+	#TODO: Add a checker here for qGene not being found
 
 	print(('\n\nPreparing Splice Site Arrays'))
 	for x in chrom_index:
 		site2D_array.append([])
 
 	print('\n\nStep 1A: Finding Splice Sites / Counting Alpha reads...')
-	chrom_index, gene2D_array, site2D_array, = findAlphaCounts_pysam(inBAM,qChrom, qGene, int(maxIntronSize), isStranded, strandedType, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array) #We apply theqGene filter here, where the splice site objects are made
+	chrom_index, gene2D_array, site2D_array = findAlphaCounts_pysam(inBAM,qChrom, qGene, int(maxIntronSize), isStranded, strandedType, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array) #We apply theqGene filter here, where the splice site objects are made
 	print('\n\nStep 2: Finding Beta reads')
-	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array)
-
-	
-	if annotationFile is not None and qGene == 'All':
-		print('\n\nFlagging sites involved in multi-gene splicing')
-		flagSiteGenes(chrom_index,site2D_array)
+	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, isbeta2Cryptic,chrom_index, gene2D_array,site2D_array)
 
 	print('\nOutputting .tsv file')
-	outputBedFile(outputPath, chrom_index,site2D_array,qGene)
+	outputBedFile(outputPath,isbeta2Cryptic,chrom_index,site2D_array)
 
-def outputCombinedLines(outTSV, site, gene):
+def outputCombinedLines(outTSV, site, gene,isbeta2Cryptic):
 	for idx, t in enumerate(allTitles): # for each sample
 		outTSV.write(str(t)+"\t")
 		outTSV.write(str(site.getChromosome())+"\t")
@@ -171,7 +140,7 @@ def outputCombinedLines(outTSV, site, gene):
 		outTSV.write(str(site.getPartnerCount(idx))+"\t")
 		outTSV.write(str(site.getCompetitorPos())+"\n")
 
-def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
+def combine(samplesFile, outputPath,qGene, isStranded, strandedType, isbeta2Cryptic):
 	print('Combining samples...')
 	outTSV = open(outputPath+".combined.tsv", 'w+')
 	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2_weighted\tPartners\tCompetitors\n")
@@ -332,7 +301,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 							#find beta1 and beta2Simple counts for the site, using partners and competitors
 							if qGene == 'All' or qGene == assocGene:
 								filledGap = True
-								checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType)
+								checkBam(BAMPaths[idx], sSite, idx, isStranded, strandedType)
 								sSite.setSSE(0.000,idx)
 				#output lines for this splice site
 				if qGene == 'All' or qGene == assocGene:
@@ -349,7 +318,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 	print('Filled in Beta read counts for {} Sites not detected in some samples'.format(filledCount))
 
 
-def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minReads, minSSE, strandedType):
+def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minReads, minSSE, strandedType, isbeta2Cryptic):
 	print('Combining samples...')
 	outTSV = open(outputPath+".combined.tsv", 'w+')
 	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2_weighted\tPartners\tCompetitors\n")
@@ -574,7 +543,7 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 								#find beta1 and beta2Simple counts for the site, using partners and competitors
 								if qGene == 'All' or qGene == assocGene:
 									filledGap = True
-									checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType)
+									checkBam(BAMPaths[idx], sSite, idx, isStranded, strandedType)
 									sSite.setSSE(0.000,idx)
 								#output lines for this splice site
 						if qGene == 'All' or qGene == assocGene:
@@ -735,6 +704,7 @@ if __name__ == "__main__":
 	#Parser for arguments when user calls command 'process'
 	parser_process = subparsers.add_parser('process')
 	parser_process.add_argument('-B', '--BAMFile', dest='inBAM', help="The mapped RNA-seq file in BAM format", required=True)
+	parser_process.add_argument('-b', '--bedFile', dest='inBed', help="The Tophat-style splice junction bed file", required=True)
 	parser_process.add_argument('-o', '--outputPath', dest='outputPath', help="Absolute path, including file prefix where SpliSER will write the .SpliSER.tsv file", required=True)
 	parser_process.add_argument('-A', '--annotationFile', dest='annotationFile', help="optional: gff3 or gtf file matching the reference genome used for alignment", required=False)
 	parser_process.add_argument('-t', '--annotationType', dest='aType', nargs='?', default='gene', type=str, help="optional: The feture to be extracted from the annotation file - default: gene", required=False)
@@ -744,7 +714,7 @@ if __name__ == "__main__":
 	#parser_process.add_argument('-S', '--isStranded', dest='isStranded', nargs='?', default=False, type=bool, required=False, help="optional: True/False Perform a strand-aware analysis - default: False")
 	parser_process.add_argument('--isStranded', dest='isStranded', default=False, action='store_true')
 	parser_process.add_argument('-s', '--strandedType', dest='strandedType', nargs='?', type=str, required=False, help="optional: Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR - default : fr")
-	#parser_process.add_argument('--beta2Cryptic', dest='isbeta2Cryptic', default=False, action='store_true', help="optional: Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).")
+	parser_process.add_argument('--beta2Cryptic', dest='isbeta2Cryptic', default=False, action='store_true', help="optional: Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).")
 	#Parser for arguments when user calls command 'combine'
 	parser_combine = subparsers.add_parser('combine')
 	parser_combine.add_argument('-S', '--samplesFile', dest='samplesFile', required=True, help="A three-column .tsv file, each line containing a sample name, the absolute path to a processed .SpliSER.tsv file input, and the absolute path to the original bam file")
@@ -752,7 +722,7 @@ if __name__ == "__main__":
 	parser_combine.add_argument('-g', '--gene', dest='qGene', nargs='?', default='All', type=str, help="optional:Limit SpliSER to splice sites falling in a single locus - default All", required=False)
 	parser_combine.add_argument('--isStranded', dest='isStranded', default=False, action='store_true')
 	parser_combine.add_argument('-s', '--strandedType', dest='strandedType', nargs='?', default="fr", type=str, required=False, help="optional: Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR - default : fr")
-	#parser_combine.add_argument('--beta2Cryptic', dest='isbeta2Cryptic', default=False, action='store_true', help="optional: Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).")
+	parser_combine.add_argument('--beta2Cryptic', dest='isbeta2Cryptic', default=False, action='store_true', help="optional: Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).")
 
 	parser_combineShallow = subparsers.add_parser('combineShallow')
 	parser_combineShallow.add_argument('-S', '--samplesFile', dest='samplesFile', required=True, help="A three-column .tsv file, each line containing a sample name, the absolute path to a processed .SpliSER.tsv file input, and the absolute path to the original bam file")
@@ -763,7 +733,7 @@ if __name__ == "__main__":
 	parser_combineShallow.add_argument('-r', '--minReads', dest='minReads',required=False, nargs='?', default=10, type=int, help="For optional filtering: The minimum number of reads giving evidence for a splice site needed for downstream analyses - default: 10")
 	parser_combineShallow.add_argument('-e','--minSSE', dest='minSSE',required=False, nargs='?', default=0.00, type=float, help="For optional filtering: The minimum SSE of a site for a given sample, for it to be considered in the --minSamples filter - default: 0.00")
 	parser_combineShallow.add_argument('-s', '--strandedType', dest='strandedType', nargs='?', type=str, required=False, help="optional: Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR - default : fr")
-	#parser_combineShallow.add_argument('--beta2Cryptic', dest='isbeta2Cryptic', default=False, action='store_true', help="optional: Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).")
+	parser_combineShallow.add_argument('--beta2Cryptic', dest='isbeta2Cryptic', default=False, action='store_true', help="optional: Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).")
 
 	parser_output = subparsers.add_parser('output')
 	parser_output.add_argument('-S', '--samplesFile', dest='samplesFile', required=True, help="the three-column .tsv file you used to combine the samples in the previous step")

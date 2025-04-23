@@ -7,7 +7,7 @@ import pysam
 digit_pattern = re.compile(r'\D')
 char_pattern = re.compile(r'\d')
 from site_ops_v1_dev import check_strand
-
+'''
 def checkBam(bamFile, sSite, sample, isStranded, strandedType):
 	##LOOK OUT FOR SECONDARY AND SUPPLEMENTARY ALIGNMENTS
 	targetPos = sSite.getPos()
@@ -133,6 +133,7 @@ def checkBam(bamFile, sSite, sample, isStranded, strandedType):
 				elif beta1_read and not SimpleBeta2_beta1type_read:
 					sSite.addBeta1Count(1, sample)
 
+'''
 
 def parse_cigar(cigarstring):
     """
@@ -176,10 +177,7 @@ def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType):
 	mode = sys.argv[1]
 
 	bam = pysam.AlignmentFile(bamFile, "rb")
-	if isStranded:
-		bamgen = (read for read in bam.fetch(siteChrom, targetPos, targetPos + 1) if check_strand(strandedType,read.flag,siteStrand) and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
-	else:
-		bamgen = (read for read in bam.fetch(siteChrom, targetPos, targetPos + 1) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
+	bamgen = (read for read in bam.fetch(siteChrom, targetPos, targetPos + 2) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
 
 	for read in bamgen:
 		cPos = -1 #stores position of competitor site, if found
@@ -227,7 +225,8 @@ def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType):
 
 					#If we have mapped across the splice site, then record a beta1 read
 					if mappedRegion and targetPos > (currentPos - int(d)) and currentPos > targetPos and currentPos >= targetPos + 1:
-						beta1_read = True
+						if not isStranded or check_strand(strandedType,read.flag,siteStrand):
+							beta1_read = True
 						#if read.query_name == "SRR3462015.1716895":
 						#	print("\t","\t",targetPos, currentPos, (currentPos - int(d)))
 						#	print("\t","\t","beta1 read: ",beta1_read)
@@ -254,18 +253,22 @@ def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType):
 							compSplicing = True
 							cPos = lSite
 
-						if compSplicing and targetPos > lSite and targetPos < rSite:
+						if compSplicing and targetPos > lSite and targetPos < rSite: #strandedness protected by usage of partner site in compSplicing check
 							SimpleBeta2_flanking_read = True
-						if not alpha_read and not compSplicing and targetPos > lSite and targetPos < rSite:
-							SimpleBeta2_mutuallyExclusive_read = True
 
-			if beta1_read and compSplicing:
+						if not alpha_read and not compSplicing and targetPos > lSite and targetPos < rSite: #If these are two seemingly unrelated sites with a gap spanning the targetPos
+							if not isStranded or check_strand(strandedType,read.flag,siteStrand):
+								sSite.addMutuallyExclusivePos(lSite)
+								sSite.addMutuallyExclusivePos(rSite)
+								SimpleBeta2_mutuallyExclusive_read = True
+
+			if beta1_read and compSplicing: #strandedness protected by earlier beta1_read check
 				SimpleBeta2_beta1type_read = True
 			#if sSite.getPos()==27281:
 			#	print(alpha_read, beta1_read, SimpleBeta2_flanking_read,SimpleBeta2_mutuallyExclusive_read,SimpleBeta2_beta1type_read)
 
 
-			if SimpleBeta2_flanking_read:
+			if SimpleBeta2_flanking_read: 
 				#if sSite.getPos()==36685:
 				#	print("SimpleBeta2_flanking_read",read.query_name)
 				#if mode == 'combine' or mode == 'combineShallow':

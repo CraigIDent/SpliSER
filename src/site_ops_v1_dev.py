@@ -3,7 +3,7 @@ import pysam
 import bisect
 from collections import Counter
 from operator import add, truediv, mul, sub
-from Gene_Site_Iter_Graph_v0_1_8 import Site
+from Gene_Site_Iter_Graph_v1_dev import Site
 from binary_searches_v1_dev import binary_gene_search, binary_site_search
 
 def check_strand(strandedType, SAMflag, siteStrand):
@@ -454,57 +454,6 @@ def trueDivCatchZero(array1, array2):
             array3[i] = truediv(array1[i],a2)
     return array3
 
-def subIntNoNeg(element1, element2):
-    ans = int(element1) - int(element2)
-    if ans >= 0:
-        return ans
-    else:
-        return 0
-
-def findBeta2Counts(site, numSamps):
-    #find the beta2 counts for this site
-    Partners= site.getPartners() # array of Site objects the current site is known to partner with
-    PartnerCounts = site.getPartnerCounts() #dictionary of known partners and alpha counts shared with the target site
-    beta2CrypticCounts = [0]*numSamps
-    beta2CrypticWeighted = [0.00]*numSamps
-    #total alpha reads of the target site
-    TotalAlphas = site.getAlphaCounts()
-
-    for i, pSite in enumerate(Partners):
-
-        for competitorPos, counts in pSite.getPartnerCounts().items(): # getting this from partner counts instead of sSite.getPartners().. .getPos() so the funciton is compatible with process and combine commands
-            #Get all beta2 simple counts where partner and competitor flank the target site.
-            if pSite.getPos() > site.getPos() and int(competitorPos) < site.getPos():
-                site.addBeta2SimpleCounts(counts)
-                site.addPartnerBeta2DoubleCounts(pSite.getPos(),counts)
-            elif pSite.getPos() < site.getPos() and int(competitorPos) > site.getPos():
-                site.addBeta2SimpleCounts(counts)
-                site.addPartnerBeta2DoubleCounts(pSite.getPos(),counts)
-
-        #get the total alpha of that partner, for all samples
-        pAlphas = pSite.getAlphaCounts()
-        #get the alpha reads shared between this site and the partner
-        pCounts = PartnerCounts[pSite.getPos()]
-        #beta 2 reads are all alpha reads of that partner, minus those shared between partner site and the target site
-        b2 = [x - y for x, y in zip(pAlphas, pCounts)]
-        #See if the b2 reads for this partner contain any double counts (that we observed in checkBam)
-        if pSite.getPos() in site.getPartnerBeta2DoubleCounts():
-            doubleCounts = site.getPartnerBeta2DoubleCounts()[pSite.getPos()]
-            #adjust for double-counter reads
-            b2 = [subIntNoNeg(x,y) for x, y in zip(b2, doubleCounts)]
-        #tally Cryptic beta 2 counts
-        beta2CrypticCounts = [x + y for x, y in zip(beta2CrypticCounts, b2)]
-        #calculate weights for the given partner
-        pWeights = trueDivCatchZero(pCounts, TotalAlphas)
-        #tally weighted beta2 counts
-        for i in range(0,numSamps):
-            b2[i] = b2[i]*pWeights[i]
-        beta2CrypticWeighted = [x + y for x, y in zip(beta2CrypticWeighted, b2)]
-
-    #update values for this site
-    site.addBeta2CrypticCounts(beta2CrypticCounts)
-    site.updateBeta2Weighted(beta2CrypticWeighted)
-
 
 def calculateSSE(site):
 
@@ -521,6 +470,12 @@ def calculateSSE(site):
 
     site.setSSEs(trueDivCatchZero(list(alpha), list(denominator)))
 
+
+#def checkSiteGenes(site):
+#    thisGene=site.getGeneName()
+#    AssociatedGenes=set()
+#    for pSite in site.getPartners():
+#        AssociatedGenes.add(pSite.getGeneName())
 
 
 
