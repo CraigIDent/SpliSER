@@ -2,16 +2,27 @@
 <p align="center">
   <img src="Images/SpliSER.png" width="200">
 </p>
-<p style="text-align:center;">Splice-site Strength Estimation using RNA-seq</p>
+<p align="center">
+   Splice-site Strength Estimation using RNA-seq
+</p>
+
 <br>
 <br>
-version 1.0.0 (24th April 2024)
-The version 1 release comes with performance improvements and several quality-of-life updates:
+
+**version 1.0 (24th April 2024)**
+
+This "version 1" release comes with performance improvements and several quality-of-life updates:
+
 * ~5x speedup of process and combine commands (thanks to Pysam and @chenkenbio)
+
 * No more regtools: SpliSER now finds splice junctions directly from BAM files (via Pysam)
+
 * If a duplicate intron is seen on both strands (likely template switching error), these are now merged into one intron with the majority strand by default.
+
 * A workaround to avoid expensive Combine runs. Using a new Pre-combine command (details below). 
+
 * Replaced some unused output columns with new site information to help downstream processing.
+
 
 If you are looking for the SpliSER version mentioned in the published article (v0.1.8), you'll find it in the *archive* directory.
 <br>
@@ -91,15 +102,13 @@ A SpliSER.tsv file containing information about all of the splice sites measured
 
 * A *Partner* site, is any site that this site forms an intron with.
 
-*A *Competitor* site, is any site which also forms an intron with a Partner of this site.
+* A *Competitor* site, is any site which also forms an intron with a Partner of this site.
 
 *Other sites, are any sites involved in the calculation of SSE which aren't a Partner or a Competitor. This can happen in a mutually exclusive splicing scenario, where the two sets of splices site never actually form junctions with one another. You'll also see it a lot when a spuriously mapped intron is spanning 10 genes.
 
 <br>
-**A Recommendation**
-Please, please always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense. 
-Count how many uses of a splice site you see: does it match the alpha counts that SpliSER gave?
-How many reads map directly across the splice site without a gap, does it match the beta1 counts?
+
+**A Recommendation** Please, please always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense.  Count how many uses of a splice site you see: does it match the alpha counts that SpliSER gave? How many reads map directly across the splice site without a gap, does it match the beta1 counts?
 
 You can catch a lot of issues with strandedness and annotation this way.
 
@@ -108,7 +117,7 @@ Any issues please don't hesitate to contact me at cdent @ mpipz . mpg . de
 <br>
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v1_0_0.py process -h
+python SpliSER_v1_0.py process -h
 ```
 <br>
 <br>
@@ -191,7 +200,7 @@ Very similar to the output of the process command (above) , just with an extra c
 
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.8.py combine -h
+python SpliSER_v1_0.py combine -h
 ```
 <br>
 
@@ -295,7 +304,7 @@ By this step you should already have everything you need
   
 Help for this command can also  be viewed in terminal using:
 ```
-python SpliSER_v1.0.0.py output -h
+python SpliSER_v1_0.py output -h
 ```
 
 ## diffSpliSER
