@@ -341,8 +341,6 @@ Here is the basic layout of the 'target' file:
 
 Please cite the original article describing SpliSER:
 
-<br>  
-
 > Craig I. Dent, Shilpi Singh, Sourav Mukherjee, Shikhar Mishra, Rucha D. Sarwade, Nawar Shamaya, Kok Ping Loo, Paul Harrison, Sridevi Sureshkumar, David Powell, Sureshkumar Balasubramanian.  
 > *Quantifying splice-site usage: a simple yet powerful approach to analyze splicing.*  
 > **NAR Genomics and Bioinformatics**, Volume 3, Issue 2, June 2021, lqab041.  
