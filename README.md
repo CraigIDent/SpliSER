@@ -1,8 +1,9 @@
 
 <p align="center">
   <img src="Images/SpliSER.png" width="200">
-  Splice-site Strength Estimation using RNA-seq
 </p>
+
+<center>Splice-site Strength Estimation using RNA-seq</center>
 
 <br>
 <br>
@@ -11,15 +12,15 @@
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
-* ~5x speedup of process and combine commands (thanks to Pysam and @chenkenbio)
+* ~5x speedup (thanks to Pysam and @chenkenbio)
 
-* No more regtools: SpliSER now finds splice junctions directly from BAM files (via Pysam)
+* No more regtools: measure directly from BAM files (via Pysam)
 
-* If a duplicate intron is seen on both strands (likely template switching error), these are now merged into one intron with the majority strand by default.
+* Duplicate introns on both strands (template switching errors), are now merged by default.
 
-* A workaround to avoid expensive Combine runs. Using a new Pre-combine command (details below). 
+* A new pre-combine command (details below). 
 
-* Replaced some unused output columns with new site information to help downstream processing.
+* Replaced some output columns with new info to help downstream processing.
 
 
 If you are looking for the SpliSER version mentioned in the published article (v0.1.8), you'll find it in the *archive* directory.
@@ -94,9 +95,10 @@ A SpliSER.tsv file containing information about all of the splice sites measured
 | 6 | alpha_count | How many times did we see this site being used in the sample |
 | 7 | beta1_count | How many reads (on the same strand, if applicable) map directly across the splice site without a gap, and don't also show splicing of a known competitor site |
 | 8 | beta2_count | How many reads show usage of a competitor site which means that this site probably wasn't used. Because the intron spans over this site, or because the flanking parts of the read cover this site in an ungapped (beta1) manner.  |
-| 9 | Other | Positions of sites involved in the SSE calculation of this site not covered by the next two columns, in a list format eg. [7228, 8479]  |
-| 10 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
-| 11 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
+| 9 | MultiGeneFlag | Flags 'True' if the SSE for this site uses sites from other genes. Otherwise 'False' (or 'NA' if running for a single gene). |
+| 10 | Other | Positions of sites involved in the SSE calculation of this site not covered by the next two columns, in a list format eg. [7228, 8479]  |
+| 11 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
+| 12 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
 
 * A *Partner* site, is any site that this site forms an intron with.
 
@@ -190,9 +192,10 @@ Very similar to the output of the process command (above) , just with an extra c
 | 7 | alpha_count | How many times did we see this site being used in the sample |
 | 8 | beta1_count | How many reads (on the same strand, if applicable) map directly across the splice site without a gap, and don't also show splicing of a known competitor site |
 | 9 | beta2_count | How many reads show usage of a competitor site which means that this site probably wasn't used. Because the intron spans over this site, or because the flanking parts of the read cover this site in an ungapped (beta1) manner.  |
-| 10 | Other | Positions of sites involved in the SSE calculation of this site not covered by the next two columns, in a list format eg. [7228, 8479]  |
-| 11 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
-| 12 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
+| 10 | MultiGeneFlag | Flags 'True' if the SSE for this site uses sites from other genes. Otherwise 'False' (or 'NA' if running for a single gene). |
+| 11 | Other | Positions of sites involved in the SSE calculation of this site not covered by the next two columns, in a list format eg. [7228, 8479]  |
+| 12 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
+| 13 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
 
 <br>
 
