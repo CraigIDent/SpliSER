@@ -1,9 +1,7 @@
 
 <p align="center">
   <img src="Images/SpliSER.png" width="200">
-</p>
-<p align="center">
-   Splice-site Strength Estimation using RNA-seq
+  Splice-site Strength Estimation using RNA-seq
 </p>
 
 <br>
