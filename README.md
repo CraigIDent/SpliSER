@@ -334,6 +334,21 @@ Here is the basic layout of the 'target' file:
 | 3 | **Library_size** - This is the number of mapped reads in your bam files for these samples. This is used for read count normalisation. You can get this by calling *samtools flagstat <your.bam>*|
 | 4 | **Description** - A column where you can make any notes you want, you can also leave these entries blank with empty quotation marks ("").
 
+<br>  
+<br>  
+
+## Citation
+
+Please cite the original article describing SpliSER:
+
+<br>  
+
+> Craig I. Dent, Shilpi Singh, Sourav Mukherjee, Shikhar Mishra, Rucha D. Sarwade, Nawar Shamaya, Kok Ping Loo, Paul Harrison, Sridevi Sureshkumar, David Powell, Sureshkumar Balasubramanian.  
+> *Quantifying splice-site usage: a simple yet powerful approach to analyze splicing.*  
+> **NAR Genomics and Bioinformatics**, Volume 3, Issue 2, June 2021, lqab041.  
+> [https://doi.org/10.1093/nargab/lqab041](https://doi.org/10.1093/nargab/lqab041)
+
+
 ## Further Information
 
 Please don't hesitate to get in contact with me at cdent @ mpipz . mpg . de
