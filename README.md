@@ -28,7 +28,7 @@ This "version 1" release comes with performance improvements and several quality
 If you are looking for the SpliSER version mentioned in the published article (v0.1.8), you'll find it in the *archive* directory.
 <br>
 
----
+<hr>
 
 SpliSER quantifies the utilisation of splice sites across the genome. Generating a Splice-site Strength Estimate (SSE) for each individual site.
 
