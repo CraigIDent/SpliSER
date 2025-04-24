@@ -1,16 +1,19 @@
-<img src="Images/SpliSER.png" width="200">
-Splice-site Strength Estimation using RNA-seq
 
+<p align="center">
+  <img src="Images/SpliSER.png" width="200">
+</p>
+<p style="text-align:center;">Splice-site Strength Estimation using RNA-seq</p>
 <br>
-
+<br>
 version 1.0.0 (24th April 2024)
 The version 1 release comes with performance improvements and several quality-of-life updates:
-* ~5x speedup of process and combine commands (thanks to Pysam and chenkenbio)
+* ~5x speedup of process and combine commands (thanks to Pysam and @chenkenbio)
 * No more regtools: SpliSER now finds splice junctions directly from BAM files (via Pysam)
+* If a duplicate intron is seen on both strands (likely template switching error), these are now merged into one intron with the majority strand by default.
 * A workaround to avoid expensive Combine runs. Using a new Pre-combine command (details below). 
-* Replaced some unused output columns with new information to help downstream processing/understanding.
+* Replaced some unused output columns with new site information to help downstream processing.
 
-If you are looking for the SpliSER version mentioned in the article (v0.1.8), you'll find it in the *Archive* directory.
+If you are looking for the SpliSER version mentioned in the published article (v0.1.8), you'll find it in the *archive* directory.
 <br>
 
 SpliSER quantifies the utilisation of splice sites across the genome. Generating a Splice-site Strength Estimate (SSE) for each individual site.
@@ -26,8 +29,7 @@ All of them. If you have 3 RNA-seq replicates across 2 conditions, you will need
 
 **What will I need for this step?**<br>
 1. You will need your RNA-seq alignment files in BAM format
-2. An accompanying BED file for each BAM. 
-3. You may also want an annotation file for your organism (from the same reference genome used for the alignment step) in GFF or GTF format.
+2. You may also want an annotation file for your organism (from the same reference genome used for the alignment step) in GFF or GTF format.
 <br>
 
 ### parameters
@@ -40,9 +42,6 @@ The *process* command requires the following two input parameters:
 | -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting .SpliSER.tsv file will be written      |
 
 * The **BAM file** can the the output of any RNA-seq alignment program
-
-**Note**: This step seems to be a common place to trip up, so I suggest checking the files at each step. I've included some trouble shooting tips at the bottom of this section
-
 
 * The **outputPath** needs to end with the sample prefix, so if you are processing sample1.bam your output path might read '-o /path/to/directory/sample1'; this will produce a file sample1.SpliSER.tsv in the folder /path/to/directory.
 <br>
@@ -59,6 +58,7 @@ There are several optional parameters, which add gene annotations, flag stranded
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
 | -g &nbsp; \--gene | Limit the analysis to one locus, given by name matching the annotation file *eg.* '-g ENSMUSG00000024949'. (If using this parameter you must also specify the --chromosome and --maxIntronSize) |
 | -m &nbsp; \--maxIntronSize | **only required if using -g** This is the maximum intron size used in your alignment (If you're unsure, take a maximum intron size for your species *eg.* '-m 6000' for *A.thaliana* or '-m 500000' for *M.musculus*).  |
+| -I &nbsp; \--intronFilePath |  Absolute path to a .introns.tsv file output by the preCombineIntrons command.  |
 
 * Add an **annotationFILE** so that you can see which genes your splice sites belong to. SpliSER is annotation-independent by design - when SpliSER reads in an annotation file, all it is really doing is identifying the 'left' and 'right' boundaries of each gene, so it can determine whether a splice-site falls within it or not. This works best with stranded data.
 
@@ -69,11 +69,36 @@ There are several optional parameters, which add gene annotations, flag stranded
 * The **chromosome** parameter allows you to restrict your analysis to a single genomic region. You'll need your input it to match however it appears in the first column of the GFF/GTF annotation file.
 
 * The **gene** parameter allows you to only assess splicing of your favourite locus, this will save you a lot of time compared to the genome-wide approach. Sometimes there are splicing events spanning across annotated gene boundaries, so you'll also need to provide a **maxIntronSize** to ensure that all splice-site strength scores for sites inside the locus are correctly calculated.
+<br>
+<br>
+
+### output
+
+A SpliSER.tsv file containing information about all of the splice sites measured in this sample
+| Column  |  Name     | Description |
+| ----------- | ----------- | ----------- |
+| 1 | Region | The chromosome or scaffold where the splice site occurs (ie Chr1) |
+| 2 | Site | The position of the splice site. The position immediately left of the splice junction in the reference genome, for both donors and acceptors. |
+| 3 | Strand| The strand on which the site occurred, if known, '+', '-', or '?' |
+| 4 | Gene | The gene in which the splice site falls. Otherwise "NA" |
+| 5 | SSE | The Splice-site Strength Estimate for this site |
+| 6 | alpha_count | How many times did we see this site being used in the sample |
+| 7 | beta1_count | How many reads (on the same strand, if applicable) map directly across the splice site without a gap, and don't also show splicing of a known competitor site |
+| 8 | beta2_count | How many reads show usage of a competitor site which means that this site probably wasn't used. Because the intron spans over this site, or because the flanking parts of the read cover this site in an ungapped (beta1) manner.  |
+| 9 | Other | Positions of sites involved in the SSE calculation of this site not covered by the next two columns, in a list format eg. [7228, 8479]  |
+| 10 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
+| 11 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
+
+* A *Partner* site, is any site that this site forms an intron with.
+
+*A *Competitor* site, is any site which also forms an intron with a Partner of this site.
+
+*Other sites, are any sites involved in the calculation of SSE which aren't a Partner or a Competitor. This can happen in a mutually exclusive splicing scenario, where the two sets of splices site never actually form junctions with one another. You'll also see it a lot when a spuriously mapped intron is spanning 10 genes.
 
 <br>
-**A Special Recommendation**
+**A Recommendation**
 Please, please always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense. 
-Count how many uses of a splice site you see, does it match the alpha counts that SpliSER gave?
+Count how many uses of a splice site you see: does it match the alpha counts that SpliSER gave?
 How many reads map directly across the splice site without a gap, does it match the beta1 counts?
 
 You can catch a lot of issues with strandedness and annotation this way.
@@ -92,6 +117,8 @@ python SpliSER_v1_0_0.py process -h
 
 
 The *combine* command takes a set of *processed* files and combines them into a single experiment. *Combine* interpolates all of the splice-site data across your samples. If a splice-site was observed in one sample but not another, SpliSER will get the associated read counts in that second sample for that site. The *combine* command produces a .combined.tsv file which holds a complete set of information for all splice-sites observed across all of your samples. This is usually the longest step.
+
+**Note:**given how long this step can take (it is expensive to lookup individual sites across multiple BAM files one by one). I've added a new command **preCombineIntrons** (described further down) which might speed up the pipeline. 
 <br>
 
 **What will I need for this step?**<br>
@@ -135,9 +162,30 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
 | -g &nbsp; \--gene | Limit the analysis to one locus *eg.* '-g ENSMUSG00000024949'(only use this if you also applied the --gene parameter in the previous process step) (Default: All) |
-| --beta2Cryptic | Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).|
 
 * The -1 / \--firstChrom parameter is redundant as of v0.1.3. The combine command now uses a topological sort to infer the order of genomic regions present in the input files.
+
+<br>
+<br>
+
+### output
+
+An interleaved combined.tsv file containing information about all of the splice sites measured in all samples for this experiment. 
+Very similar to the output of the process command (above) , just with an extra column at the start to denote which sample the measurement came from
+| Column  |  Name     | Description |
+| ----------- | ----------- | ----------- |
+| 1 | Sample | The alias for the sample in which the site was measured, taken from the your samplesFile |
+| 2 | Region | The chromosome or scaffold where the splice site occurs (ie Chr1) |
+| 3 | Site | The position of the splice site. The position immediately left of the splice junction in the reference genome, for both donors and acceptors. |
+| 4 | Strand| The strand on which the site occurred, if known, '+', '-', or '?' |
+| 5 | Gene | The gene in which the splice site falls. Otherwise "NA" |
+| 6 | SSE | The Splice-site Strength Estimate for this site |
+| 7 | alpha_count | How many times did we see this site being used in the sample |
+| 8 | beta1_count | How many reads (on the same strand, if applicable) map directly across the splice site without a gap, and don't also show splicing of a known competitor site |
+| 9 | beta2_count | How many reads show usage of a competitor site which means that this site probably wasn't used. Because the intron spans over this site, or because the flanking parts of the read cover this site in an ungapped (beta1) manner.  |
+| 10 | Other | Positions of sites involved in the SSE calculation of this site not covered by the next two columns, in a list format eg. [7228, 8479]  |
+| 11 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
+| 12 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
 
 <br>
 
@@ -145,6 +193,45 @@ Help for this command can also be viewed in terminal using:
 ```
 python SpliSER_v0.1.8.py combine -h
 ```
+<br>
+
+## preCombineIntrons
+
+The *preCombineIntrons* command generates a file containing the introns seen across all BAM files in an experiment. This means that the **process** command will already know which sites to measure, and the **combine** command won't spend so much time filling in missing sites in each sample. This is more efficient and saves time. If you want to use this, it should be applied *before* running the **process** command. You will need to run this command once per experiment; it will then produce a .introns.tsv file which can be taken as input for the *process* command. 
+
+**What will I need for this step?**<br>
+1. A list of all the paths to your BAM files in a comma-separated list (eg. /path/to/control1.bam,/path/to/control2.bam,/path/to/test1.bam,/path/to/test2.bam,
+<br>
+
+### parameters
+
+The *process* command requires the following two input parameters:
+
+| Required Parameter      | Description |
+| ----------- | ----------- |
+| -L &nbsp;    \--ListOfBAMFiles      | A comma-separated (no spaces) list of BAM files in this experiment (which will be later combined)     |
+| -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting .introns.tsv file will be written      |
+
+* The **outputPath** needs to end with a filename  prefix, so if your output path reads '-o /path/to/directory/WTvsMUT'; this will produce a file WTvsMUT.introns.tsv in the folder /path/to/directory.
+
+| Optional Parameter      | Description |
+| ----------- | ----------- |
+| --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
+| -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
+| -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
+<br>
+
+### output
+
+A 4-column tsv file summarising introns seen in any sample for this experiment.
+| Column  | Description |
+| ----------- | ----------- |
+| 1 | The chromosome or scaffold where the intron occurs (ie Chr1) |
+| 2 | The leftmost position of the intron. The position immediately left of the left site of the splice junction, in the reference genome. |
+| 3 | The rightmost position of the intron. The position immediately left of the right site of the splice junction, in the reference genome. |
+| 4 |  The strand on which the intron occurred, if known, '+', '-', or '?' |
+
+<br>
 <br>
 
 ### combineShallow
@@ -208,7 +295,7 @@ By this step you should already have everything you need
   
 Help for this command can also  be viewed in terminal using:
 ```
-python SpliSER_v0.1.8.py output -h
+python SpliSER_v1.0.0.py output -h
 ```
 
 ## diffSpliSER

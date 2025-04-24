@@ -6,7 +6,7 @@ from src.bam_parser_v1 import checkBam_pysam, findAlphaCounts_pysam
 def outputBedFile(outputPath,chrom_index, site2D_array,qGene):
 	outBed = open(outputPath+".SpliSER.tsv","w+")
 	#Write the header line
-	outBed.write("Region\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
+	outBed.write("Region\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
 
 
 	for c_index, c in enumerate(chrom_index):

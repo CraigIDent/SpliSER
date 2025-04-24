@@ -60,7 +60,7 @@ def outputCombinedLines(outTSV, site, gene,qGene,allTitles):
 def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 	print('Combining samples...')
 	outTSV = open(outputPath+".combined.tsv", 'w+')
-	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
+	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
 	#Process the input paths file
 	samples = 0
 	allTitles=[]
@@ -215,7 +215,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minReads, minSSE, strandedType):
 	print('Combining samples...')
 	outTSV = open(outputPath+".combined.tsv", 'w+')
-	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2Simple_count\tbeta2Cryptic_count\tbeta2_weighted\tPartners\tCompetitors\n")
+	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
 	#Process the input paths file
 	samples = 0
 	allTitles=[]
