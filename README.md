@@ -85,10 +85,10 @@ There are several optional parameters, which add gene annotations, flag stranded
 * The **chromosome** parameter allows you to restrict your analysis to a single genomic region. You'll need your input it to match however it appears in the first column of the GFF/GTF annotation file.
 
 * The **gene** parameter allows you to only assess splicing of your favourite locus, this will save you a lot of time compared to the genome-wide approach. Sometimes there are splicing events spanning across annotated gene boundaries, so you'll also need to provide a **maxIntronSize** to ensure that all splice-site strength scores for sites inside the locus are correctly calculated.
-<br>
+
 <br>
 
-### output
+### result
 
 A SpliSER.tsv file containing information about all of the splice sites measured in this sample
 | Column  |  Name     | Description |
@@ -125,6 +125,8 @@ Help for this command can also be viewed in terminal using:
 ```
 python SpliSER_v1_0.py process -h
 ```
+
+<br>
 <br>
 <br>
 
@@ -181,9 +183,8 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 * The -1 / \--firstChrom parameter is redundant as of v0.1.3. The combine command now uses a topological sort to infer the order of genomic regions present in the input files.
 
 <br>
-<br>
 
-### output
+### result
 
 An interleaved combined.tsv file containing information about all of the splice sites measured in all samples for this experiment. 
 Very similar to the output of the process command (above) , just with an extra column at the start to denote which sample the measurement came from
@@ -209,6 +210,8 @@ Help for this command can also be viewed in terminal using:
 ```
 python SpliSER_v1_0.py combine -h
 ```
+<br>
+<br>
 <br>
 
 ## preCombineIntrons
@@ -237,7 +240,7 @@ The *process* command requires the following two input parameters:
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
 <br>
 
-### output
+### result
 
 A 4-column tsv file summarising introns seen in any sample for this experiment.
 | Column  | Description |
@@ -271,7 +274,6 @@ To improve performance you can run this command with optional parameters, which 
 For example: If you don't plan to analyse splice sites which are not supported by 10+ reads in at least 50 samples. You could select "-m 50 -r 10" to skip over these sites during the combineShallow run. If your sample number is in the 1000s, this will considerably speed up the command. 
 Further, if you don't care to analyse sites which vary from 0.00 to 0.002, you can select "-e 0.05" to ignore those sites which never get an SSE above that threshold.
 
-<br>
 <br>
 
 ## output
