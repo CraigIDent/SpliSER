@@ -33,8 +33,8 @@ If you are looking for the SpliSER version mentioned in the published article (v
 
 SpliSER quantifies the utilisation of splice sites across the genome. Generating a Splice-site Strength Estimate (SSE) for each individual site.
 
-SpliSER has three commands which are used in succession across an analysis: *process*, *combine*, and *output*
-There is an additonal, optional,  *preCombineIntron* command which may save time, especially for big genomes/BAMs
+SpliSER has three commands which are used in succession across an analysis: *process*, *combine*, and *output*.
+There is an additonal, optional,  *preCombineIntron* command which may save time, especially for big genomes/BAMs.
 There is also a second version of *combine* called *combineShallow* with an IO workaround for experiments with many samples.
 
 ## process
