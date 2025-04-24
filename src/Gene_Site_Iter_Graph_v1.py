@@ -1,4 +1,3 @@
-#Version 0.1.8 - unchanged from 0.1.7 on 19 OCT 2021
 
 #Gene.py
 #defines a 'Gene' object. Containing annotation information and all splice sites detected through RNA-seq analysis.
@@ -6,7 +5,7 @@ from operator import add, truediv, mul, sub
 import bisect
 import numpy as np
 from collections import defaultdict
-#print("FInally some answers?")
+
 
 class Gene:
 

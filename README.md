@@ -3,8 +3,14 @@ Splice-site Strength Estimation using RNA-seq
 
 <br>
 
-version 0.1.8 (16th November 2022)
+version 1.0.0 (24th April 2024)
+The version 1 release comes with performance improvements and several quality-of-life updates:
+* ~5x speedup of process and combine commands (thanks to Pysam and chenkenbio)
+* No more regtools: SpliSER now finds splice junctions directly from BAM files (via Pysam)
+* A workaround to avoid expensive Combine runs. Using a new Pre-combine command (details below). 
+* Replaced some unused output columns with new information to help downstream processing/understanding.
 
+If you are looking for the SpliSER version mentioned in the article (v0.1.8), you'll find it in the *Archive* directory.
 <br>
 
 SpliSER quantifies the utilisation of splice sites across the genome. Generating a Splice-site Strength Estimate (SSE) for each individual site.
@@ -26,68 +32,58 @@ All of them. If you have 3 RNA-seq replicates across 2 conditions, you will need
 
 ### parameters
 
-The *process* command requires the following three input parameters:
+The *process* command requires the following two input parameters:
 
 | Required Parameter      | Description |
 | ----------- | ----------- |
 | -B &nbsp;    \--BAMFile      | The path to an RNA-seq alignment file, in BAM format       |
-| -b &nbsp;    \--BEDFile  | The path to a corresponding splice junctions file, in BED12 format        |
-| -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting .SpliSER.bed file will be written      |
+| -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting .SpliSER.tsv file will be written      |
 
 * The **BAM file** can the the output of any RNA-seq alignment program
 
-* The **BED file** is a TopHat-style summary of splice junctions detected in the alignment. This can be generated from any BAM file using the RegTools (https://regtools.readthedocs.io/en/latest/) 'junction extract' command.
 **Note**: This step seems to be a common place to trip up, so I suggest checking the files at each step. I've included some trouble shooting tips at the bottom of this section
 
 
-* The **outputPath** needs to end with the sample prefix, so if you are processing sample1.bam your output path might read '-o /path/to/directory/sample1'; this will produce a file sample1.SpliSER.tsv in the folder /path/to/directory. (In version 0.1.1 this was called a .SpliSER.bed file).
+* The **outputPath** needs to end with the sample prefix, so if you are processing sample1.bam your output path might read '-o /path/to/directory/sample1'; this will produce a file sample1.SpliSER.tsv in the folder /path/to/directory.
 <br>
 <br>
 
-There are several optional parameters, which add gene annotations to the output and allow the analysis to be limited to a particular region:
+There are several optional parameters, which add gene annotations, flag strandedness in your data,  and allow the analysis to be limited to a particular region:
 
 | Optional Parameter      | Description |
 | ----------- | ----------- |
-| -A &nbsp;    \--annotationFile | The path to a GFF or GTF file mathcing the genome to which your RNA-seq data was aligned|
+| -A &nbsp;    \--annotationFile | The path to a GFF or GTF file matching the genome to which your RNA-seq data was aligned|
 | -t &nbsp;   \--annotationType | The type of feature to be extracted from the annotation file. (Default: gene). |
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
-| --beta2Cryptic | Calculate SSE of sites taking into account the weighted utilisation of competing splice sites as indirect evidence of site non-utilisation (Legacy).|
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
 | -g &nbsp; \--gene | Limit the analysis to one locus, given by name matching the annotation file *eg.* '-g ENSMUSG00000024949'. (If using this parameter you must also specify the --chromosome and --maxIntronSize) |
 | -m &nbsp; \--maxIntronSize | **only required if using -g** This is the maximum intron size used in your alignment (If you're unsure, take a maximum intron size for your species *eg.* '-m 6000' for *A.thaliana* or '-m 500000' for *M.musculus*).  |
 
-* Add an **annotationFILE** so that you can see which genes your splice sites belong to. SpliSER is annotation-independent by design - when SpliSER reads in an annotation file, all it is really doing is identifying the 'left' and 'right' boundaries of each gene, so it can determine whether a splice-site falls within it or not. In version 0.1.1 a custom annotation file format was required (see the attached TAIR10_genes.tsv file as an example).
+* Add an **annotationFILE** so that you can see which genes your splice sites belong to. SpliSER is annotation-independent by design - when SpliSER reads in an annotation file, all it is really doing is identifying the 'left' and 'right' boundaries of each gene, so it can determine whether a splice-site falls within it or not. This works best with stranded data.
 
 * SpliSER uses the HTSeq package to interpret the GFF/GTF files, thus the first item in the attributes column is taken as the Gene Name.
 
 * The **annotationType** is what will be searched for in the GFF/GTF file. This is 'gene' by default, but these files vary between species - check to make sure you don't need to change it to 'Gene'.
 
-* The **chromosome** parameter allows you to restrict your analysis to a single genomic region. You'll need to input it to match however it appears in the first coloumn of the GFF/GTF annotation file.
+* The **chromosome** parameter allows you to restrict your analysis to a single genomic region. You'll need your input it to match however it appears in the first column of the GFF/GTF annotation file.
 
 * The **gene** parameter allows you to only assess splicing of your favourite locus, this will save you a lot of time compared to the genome-wide approach. Sometimes there are splicing events spanning across annotated gene boundaries, so you'll also need to provide a **maxIntronSize** to ensure that all splice-site strength scores for sites inside the locus are correctly calculated.
 
 <br>
-**Troubleshooting guide for splice juction .bed files**
+**A Special Recommendation**
+Please, please always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense. 
+Count how many uses of a splice site you see, does it match the alpha counts that SpliSER gave?
+How many reads map directly across the splice site without a gap, does it match the beta1 counts?
 
-* After running Regtools, open up the .bed files in a text editor and have a look at the 6th column. If you chose unstranded, these should all be question marks (?). If you chose a stranded analysis, then you should see some pluses (+) and minuses (-). 
-
-* These pluses and minuses should mostly occur in groups of consecutive pluses or minuses. Splice sites from the same genes should be in the same orientation as eachother. If your data is unstranded, but you incorrectly tell Regtools it is stranded, then you will still get pluses and minuses but you will see an apparently random alternation of + and - in the 6th column of the bed file (because Regtools will base the orientation on the first read it encounters at each junction).
-
-* Regtools sometimes doesn't like stranded bam file and will only correctly annotate one strand, and the other strand will all be question marks. If about 50% of your junctions are '+', and the other 50% are '?', then you may need to manually overwrite the '?' symbols as '-' (conversely if you see 50% '-' and  '?'). 
-
-* The rf, fr options can be confusing, but there is a rule of thumb to help: Open up your Bam in IGV, colour the reads by first-in-pair, and find a splice junction. Find the corresponding junction in the bed file. If the orientation of the junction +/- is the same orientation as the reads +/-, then you are all set. From there, if the Reads are in the same orientation as the gene annotation, then use SpliSER's 'fr' option, if they are opposite orientation then use SpliSER's 'rf option.
-
-*Issues with the above steps can look like the following:
-    *Half of the splice sites didn't get assigned to a gene
-    *There are no Beta1 read counts for any splice site
+You can catch a lot of issues with strandedness and annotation this way.
 
 Any issues please don't hesitate to contact me at cdent @ mpipz . mpg . de
 
 <br>
 Help for this command can also be viewed in terminal using:
 ```
-python SpliSER_v0.1.8.py process -h
+python SpliSER_v1_0_0.py process -h
 ```
 <br>
 <br>
