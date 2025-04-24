@@ -4,8 +4,8 @@ import sys
 import pysam
 import bisect
 from collections import Counter
-from Gene_Site_Iter_Graph_v1 import Site
-from binary_searches_v1 import binary_gene_search, binary_site_search
+from src.Gene_Site_Iter_Graph_v1 import Site
+from src.binary_searches_v1 import binary_gene_search, binary_site_search
 
 def check_strand(strandedType, SAMflag, siteStrand):
     '''

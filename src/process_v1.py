@@ -1,7 +1,7 @@
-from Gene_Site_Iter_Graph_v1 import Gene, Site, Iter, Graph
-from site_ops_v1 import calculateSSE
-from gene_creator_v1 import createGenes
-from bam_parser_v1 import checkBam_pysam, findAlphaCounts_pysam
+from src.Gene_Site_Iter_Graph_v1 import Gene, Site, Iter, Graph
+from src.site_ops_v1 import calculateSSE
+from src.gene_creator_v1 import createGenes
+from src.bam_parser_v1 import checkBam_pysam, findAlphaCounts_pysam
 
 def outputBedFile(outputPath,chrom_index, site2D_array,qGene):
 	outBed = open(outputPath+".SpliSER.tsv","w+")

@@ -10,12 +10,12 @@ import time
 import argparse
 from ast import literal_eval
 
-from Gene_Site_Iter_Graph_v1 import Gene, Site, Iter
-from process_v1 import process
-from site_ops_v1 import calculateSSE
-from gene_creator_v1 import createGenes
-from bam_parser_v1 import preCombineIntrons
-from combine_v1 import combine, combineShallow
+from src.Gene_Site_Iter_Graph_v1 import Gene, Site, Iter
+from src.process_v1 import process
+from src.site_ops_v1 import calculateSSE
+from src.gene_creator_v1 import createGenes
+from src.bam_parser_v1 import preCombineIntrons
+from src.combine_v1 import combine, combineShallow
 
 def DiffSpliSER_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 

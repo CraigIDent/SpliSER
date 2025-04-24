@@ -1,6 +1,4 @@
 
-#Gene.py
-#defines a 'Gene' object. Containing annotation information and all splice sites detected through RNA-seq analysis.
 from operator import add, truediv, mul, sub
 import bisect
 import numpy as np
