@@ -37,6 +37,14 @@ SpliSER has three commands which are used in succession across an analysis: *pro
 There is an additonal, optional,  *preCombineIntron* command which may save time, especially for big genomes/BAMs.
 There is also a second version of *combine* called *combineShallow* with an IO workaround for experiments with many samples.
 
+**Some tips to get started:**
+
+* If you have stranded data, use the --isStranded flag consistently for all of your commands. the default --strandedType "rf" means that that read strands are the opposite of the gene they map to. 
+
+* Always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense.  Count how many uses of a splice site you see: does it match the alpha counts that SpliSER gave? How many reads map directly across the splice site without a gap, does it match the beta1 counts?
+
+You can catch a lot of issues with strandedness and annotation this way.
+
 ## process
 
 The *process* command generates a file containing the SSE values (an associated information) of each splice site observed in an RNA-seq alignment. You will need to run this command once on each individual sample; it will then produce a .SpliSER.bed file which can be taken as input for the *combine* command. 
@@ -112,14 +120,6 @@ A SpliSER.tsv file containing information about all of the splice sites measured
 * A *Competitor* site, is any site which also forms an intron with a Partner of this site.
 
 *Other sites, are any sites involved in the calculation of SSE which aren't a Partner or a Competitor. This can happen in a mutually exclusive splicing scenario, where the two sets of splices site never actually form junctions with one another. You'll also see it a lot when a spuriously mapped intron is spanning 10 genes.
-
-<br>
-
-**A Recommendation** Please, please always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense.  Count how many uses of a splice site you see: does it match the alpha counts that SpliSER gave? How many reads map directly across the splice site without a gap, does it match the beta1 counts?
-
-You can catch a lot of issues with strandedness and annotation this way.
-
-Any issues please don't hesitate to contact me at cdent @ mpipz . mpg . de
 
 <br>
 Help for this command can also be viewed in terminal using:
