@@ -137,8 +137,8 @@ A SpliSER.tsv file containing information about all of the splice sites measured
 
 <br>
 Help for this command can also be viewed in terminal using:
-```
-python SpliSER_v1_0.py process -h
+```bash
+spliser process -h
 ```
 
 <br>
@@ -222,8 +222,8 @@ Very similar to the output of the process command (above) , just with an extra c
 <br>
 
 Help for this command can also be viewed in terminal using:
-```
-python SpliSER_v1_0.py combine -h
+```bash
+spliser combine -h
 ```
 <br>
 <br>
@@ -327,8 +327,8 @@ By this step you should already have everything you need
 <br>  
   
 Help for this command can also  be viewed in terminal using:
-```
-python SpliSER_v1_0.py output -h
+```bash
+spliser output -h
 ```
 
 ## diffSpliSER
