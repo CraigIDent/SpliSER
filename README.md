@@ -45,8 +45,7 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 
 You can catch a lot of issues with strandedness and annotation this way.
 
-### requirements
-
+<br>
 
 ### Installation
 ---
