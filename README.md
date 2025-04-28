@@ -137,6 +137,7 @@ A SpliSER.tsv file containing information about all of the splice sites measured
 
 <br>
 Help for this command can also be viewed in terminal using:
+
 ```bash
 spliser process -h
 ```
@@ -222,6 +223,7 @@ Very similar to the output of the process command (above) , just with an extra c
 <br>
 
 Help for this command can also be viewed in terminal using:
+
 ```bash
 spliser combine -h
 ```
@@ -327,6 +329,7 @@ By this step you should already have everything you need
 <br>  
   
 Help for this command can also  be viewed in terminal using:
+
 ```bash
 spliser output -h
 ```
