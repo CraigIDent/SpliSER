@@ -1,7 +1,6 @@
 
 from operator import add, truediv, mul, sub
 import bisect
-import numpy as np
 from collections import defaultdict
 
 

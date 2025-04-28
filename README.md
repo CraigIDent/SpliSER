@@ -39,11 +39,15 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 
 **Some tips to get started:**
 
-* If you have stranded data, use the --isStranded flag consistently for all of your commands. the default --strandedType "rf" means that that read strands are the opposite of the gene they map to. 
+* If you have stranded data, use the --isStranded flag consistently for all of your commands. the default --strandedType "rf" means that that (first-in-pair) read strands are the opposite of the gene that they map to. 
 
 * Always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense.  Count how many uses of a splice site you see: does it match the alpha counts that SpliSER gave? How many reads map directly across the splice site without a gap, does it match the beta1 counts?
 
 You can catch a lot of issues with strandedness and annotation this way.
+
+## requirements
+- pysam
+- HTseq 
 
 ## process
 
@@ -321,6 +325,14 @@ python SpliSER_v1_0.py output -h
 
 We provide an R markdown script for identifying statistically significant differences in splice site usage between samples aligned to the same reference genome. 
 
+### required libraries
+- edgeR
+- dplyr
+- tidyr
+- ggplot2
+
+<br>
+  
 You'll need to edit some of the code to work for your particular sample names/numbers of replicates, just follow the instrcutions in the comments of the R markdown script. 
 
 You'll also need to make tab-separated 'target' file with some additional details about the samples that you are analyzing. We've included a template file with dummy values which you can replace with your own.
@@ -333,6 +345,7 @@ Here is the basic layout of the 'target' file:
 | 2 | **Group** - Each sample should belong to one of two groups, you can call the groups whatver you like.  |
 | 3 | **Library_size** - This is the number of mapped reads in your bam files for these samples. This is used for read count normalisation. You can get this by calling *samtools flagstat <your.bam>*|
 | 4 | **Description** - A column where you can make any notes you want, you can also leave these entries blank with empty quotation marks ("").
+
 
 <br>  
 <br>  

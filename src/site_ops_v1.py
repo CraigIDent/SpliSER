@@ -1,5 +1,4 @@
 #site_ops.py
-import pysam
 from operator import add, truediv, mul, sub
 from src.Gene_Site_Iter_Graph_v1 import Site
 
