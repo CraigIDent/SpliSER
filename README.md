@@ -46,8 +46,18 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 You can catch a lot of issues with strandedness and annotation this way.
 
 ### requirements
-- pysam
-- HTseq 
+
+
+### Installation
+---
+*Required python modules: pysam, HTSeq*
+
+Clone the SpliSER repository:
+
+```bash
+git clone https://github.com/YOURNAME/SpliSER.git
+cd SpliSER
+pip install .
 
 ## process
 

@@ -1,8 +1,8 @@
 """
 SpliSER- Splice-site Strength Estimation from RNA-seq
 """
-#Version 1.0 - 24th April 2025
-version = "v1.0"
+#Version 1.0.0 - 24th April 2025
+version = "v1.0.0"
 
 import sys
 import timeit
@@ -10,12 +10,12 @@ import time
 import argparse
 from ast import literal_eval
 
-from src.Gene_Site_Iter_Graph_v1 import Gene, Site, Iter
-from src.process_v1 import process
-from src.site_ops_v1 import calculateSSE
-from src.gene_creator_v1 import createGenes
-from src.bam_parser_v1 import preCombineIntrons
-from src.combine_v1 import combine, combineShallow
+from spliser.Gene_Site_Iter_Graph_v1 import Gene, Site, Iter
+from spliser.process_v1 import process
+from spliser.site_ops_v1 import calculateSSE
+from spliser.gene_creator_v1 import createGenes
+from spliser.bam_parser_v1 import preCombineIntrons
+from spliser.combine_v1 import combine, combineShallow
 
 def DiffSpliSER_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 
@@ -145,7 +145,7 @@ def output(outputType, samplesFile,combinedFile, outputPath, minReads, qGene, mi
 		GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSamples)
 
 #Main Method
-if __name__ == "__main__":
+def main():
 	print("\nSpliSER "+version+" SKB LAB\n")
 	# this won't be run when imported
 	start = timeit.default_timer()
@@ -218,3 +218,6 @@ if __name__ == "__main__":
 	stop = timeit.default_timer()
 	print("Total runtime (s): \t"+ str(stop - start))
 #EOF
+
+if __name__ == "__main__":
+	main()

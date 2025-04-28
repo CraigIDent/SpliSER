@@ -1,7 +1,7 @@
 from ast import literal_eval
-from src.Gene_Site_Iter_Graph_v1 import Gene, Site, Iter, Graph
-from src.site_ops_v1 import makeSingleSpliceSite, calculateSSE
-from src.bam_parser_v1 import checkBam_pysam
+from spliser.Gene_Site_Iter_Graph_v1 import Gene, Site, Iter, Graph
+from spliser.site_ops_v1 import makeSingleSpliceSite, calculateSSE
+from spliser.bam_parser_v1 import checkBam_pysam
 
 def deduceChromOrder(bedPaths):
 

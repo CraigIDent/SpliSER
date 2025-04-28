@@ -1,6 +1,6 @@
 #site_ops.py
 from operator import add, truediv, mul, sub
-from src.Gene_Site_Iter_Graph_v1 import Site
+from spliser.Gene_Site_Iter_Graph_v1 import Site
 
 
 
