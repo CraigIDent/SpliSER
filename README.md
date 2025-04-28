@@ -57,6 +57,7 @@ Clone the SpliSER repository:
 git clone https://github.com/YOURNAME/SpliSER.git
 cd SpliSER
 pip install .
+```
 
 ## process
 
