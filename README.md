@@ -39,6 +39,8 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 
 **Some tips to get started:**
 
+* When aligning your RNA-seq reads, take special note of the maximum intron size. Having this too large (or not set) can cause a lot of large spurious introns, which span multiple genes and push down SSE values globally. 
+
 * If you have stranded data, use the --isStranded flag consistently for all of your commands. the default --strandedType "rf" means that that (first-in-pair) read strands are the opposite of the gene that they map to. 
 
 * Always check your outputs for a few sites against the BAM file itself (using an alignment viewer like IGV) to see if the SpliSER output makes sense.  Count how many uses of a splice site you see: does it match the alpha counts that SpliSER gave? How many reads map directly across the splice site without a gap, does it match the beta1 counts?
