@@ -56,7 +56,7 @@ You can catch a lot of issues with strandedness and annotation this way.
 Clone the SpliSER repository:
 
 ```bash
-git clone https://github.com/YOURNAME/SpliSER.git
+git clone https://github.com/CraigIDent/SpliSER.git
 cd SpliSER
 pip install .
 ```
