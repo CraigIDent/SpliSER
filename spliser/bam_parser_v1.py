@@ -88,7 +88,7 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType):
                     Intron_info =[(introns_plus,"+"),(introns_minus,"-")]
                 else:
                     bamgen=(read for read in bam.fetch(chrom) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
-                    introns=bam.find_introns(b)
+                    introns=bam.find_introns(bamgen)
                     Intron_info = [(introns,"?")]
             
                 for introns,strand in Intron_info:
