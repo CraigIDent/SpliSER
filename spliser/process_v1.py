@@ -53,6 +53,7 @@ def flagSiteGenes(chrom_index,site2D_array):
 		for site in site2D_array[c_index]:
 			thisGene = site.getGeneName()
 			AssociatedGenes=set()
+			AssociatedGenes.add(thisGene)
 			#check all partner sites
 			for pSite in site.getPartners():
 				AssociatedGenes.add(pSite.getGeneName())
