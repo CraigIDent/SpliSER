@@ -11,7 +11,7 @@
 <br>
 <br>
 
-**version 1.0 (24th April 2024)**
+**version 1.0 (9th May 2025)**
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
