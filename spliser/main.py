@@ -66,11 +66,6 @@ def DiffSpliSER_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 			for idx, t in enumerate(allTitles):
 				t_alpha = int(currentVals[idx][6])# get alpha Values
 				t_beta = float(currentVals[idx][7])+float(currentVals[idx][8]) # add beta1 and beta2Simple
-				if currentVals[idx][10] != "NA":
-					t_WeightedCrypticBeta = float(currentVals[idx][10])
-				else:
-					t_WeightedCrypticBeta =0
-
 				t_SSE = float(currentVals[idx][5])
 				if t_alpha+t_beta >= minReads: # if this sample passes the minimum read count for this site
 
@@ -161,6 +156,7 @@ def main():
 	parser_introns.add_argument('-c', '--chromosome', dest='qChrom', nargs='?', default='All', type=str,help="optional: limit SpliSER to one chromosome/scaffold -  default: All", required=False)
 	parser_introns.add_argument('--isStranded', dest='isStranded', default=False, action='store_true')
 	parser_introns.add_argument('-s', '--strandedType', dest='strandedType', nargs='?', type=str, required=False, help="optional: Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR - default : fr")
+	parser_introns.add_argument('-A', '--annotationFile', dest='annotationFile', help="optional: gff3 or gtf file for finding strand of introns where there is conflicting strands in reads", required=False)
 
 	#Parser for arguments when user calls command 'process'
 	parser_process = subparsers.add_parser('process')

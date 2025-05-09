@@ -3,7 +3,8 @@
 import sys
 import pysam
 import bisect
-from collections import Counter
+from collections import Counter, defaultdict
+import HTSeq
 from spliser.Gene_Site_Iter_Graph_v1 import Site
 from spliser.binary_searches_v1 import binary_gene_search, binary_site_search
 
@@ -37,32 +38,101 @@ def check_strand(strandedType, SAMflag, siteStrand):
 
     return (readStrand == siteStrand)
 
-
-def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter):
+#Takes a Counter of plus and minus strand introns <(start,end): count> and collapses duplicates where there is a bias towards one or the other
+#Also takes a Dictionary of annotated introns <(start, end): strand> and uses this in preference
+def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter, annotation={}):
     # Create a copy to avoid modifying inputs directly
     introns_plus = introns_plus.copy()
     introns_minus = introns_minus.copy()
 
-    # Check for overlapping introns by (start, end) tuple
-    shared_introns = set(introns_plus.keys()) & set(introns_minus.keys())
+    isAnnotation=False
+    if len(annotation)>0:
+        isAnnotation=True
+    print(isAnnotation)
 
+    # Check for overlapping introns by (start, end) tuple
+    annotationOverrideCount = 0
+    shared_introns = set(introns_plus.keys()) & set(introns_minus.keys())
     for intron in shared_introns:
         plus_count = introns_plus[intron]
         minus_count = introns_minus[intron]
+        annotated = False
+        annotStrand = "?"
+        
 
-        if plus_count >= minus_count:
+        if intron in annotation:
+            #‚print(intron, annotation[intron])
+            annotated=True 
+            annoStrand = annotation[intron]
+        if annotated and annoStrand == "+":
+            introns_plus[intron] += minus_count
+            del introns_minus[intron]
+            annotationOverrideCount +=1
+        elif annotated and annoStrand == "-":
+            introns_minus[intron] += plus_count
+            del introns_plus[intron]  
+            annotationOverrideCount +=1       
+        elif plus_count >= minus_count:
+            #print(intron)
             introns_plus[intron] += minus_count
             del introns_minus[intron]
         else:
+            #print(intron)
             introns_minus[intron] += plus_count
             del introns_plus[intron]
 
+    if isAnnotation:
+        print("Used annotation to determine strand of "+str(annotationOverrideCount)+" duplicate introns on opposite strands")
+    print("Used majority rule to resolve "+str(len(shared_introns)-annotationOverrideCount)+" duplicate introns on opposite strands")
+
     return introns_plus, introns_minus
 
+#Takes a GFF file and returns a dictionary of annotated introns with format <(start, end): strand>
+def extract_introns_from_gff(gff_file, chrom, feature_type="exon"):
+    """
+    Extract introns on a specified chromosome from a GFF/GTF file using HTSeq.
 
-def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType):
+    Parameters:
+        gff_file (str): Path to the GFF or GTF file.
+        chrom (str): Chromosome name to filter by.
+        feature_type (str): The feature to consider (default: "exon").
+
+    Returns:
+        dict: {(start, end): strand} for each inferred intron on the given chromosome.
+    """
+    exon_by_transcript = defaultdict(list)
+    #print(exon_by_transcript)
+    # Parse the GFF file
+    for feature in HTSeq.GFF_Reader(gff_file):
+        if feature.type == feature_type and 'Parent' in feature.attr:
+            if feature.iv.chrom != chrom:
+                continue
+            tx_id = feature.attr['Parent']
+            exon_by_transcript[tx_id].append((feature.iv.start, feature.iv.end, feature.iv.strand))
+
+    introns = {}
+
+    # Infer introns from exons per transcript
+    for tx_id, exons in exon_by_transcript.items():
+        # Sort exons by start coordinate
+        exons.sort()
+        for i in range(len(exons) - 1):
+            exon1 = exons[i]
+            exon2 = exons[i + 1]
+            intron_start = exon1[1]
+            intron_end = exon2[0]
+            if intron_start < intron_end:
+                introns[(intron_start, intron_end)] = exon1[2]
+
+    return introns
+
+def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,annotationFile=""):
     dontCollapse=False
     BAMPaths = BAMPathList.split(",") # stores the absolute path to each orginal bam file
+
+    isAnnotation=False
+    if annotationFile != "":
+        isAnnotation=True
 
     print("Finding all introns across:", len(BAMPaths),"samples")
     print("Standed analysis: ", isStranded)
@@ -83,8 +153,13 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType):
                     bamgen_minus = (read for read in bam.fetch(chrom) if check_strand(strandedType,read.flag,"-") and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
                     introns_plus=bam.find_introns(bamgen_plus)
                     introns_minus=bam.find_introns(bamgen_minus)
+                    if isAnnotation:
+                        annotated_introns = extract_introns_from_gff(annotationFile,chrom)
                     if not dontCollapse:
-                        introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus)
+                        if isAnnotation:
+                           introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns)
+                        else: 
+                            introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus)
                     Intron_info =[(introns_plus,"+"),(introns_minus,"-")]
                 else:
                     bamgen=(read for read in bam.fetch(chrom) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
@@ -104,7 +179,7 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType):
 
 
 
-def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,strandedType, NA_gene, sample=0, numsamples=1, QUERY_gene=None, chrom_index=None, gene2D_array=None, site2D_array=None, intronFilePath=''):
+def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,strandedType, NA_gene, sample=0, numsamples=1, QUERY_gene=None, chrom_index=None, gene2D_array=None, site2D_array=None, intronFilePath='', annotationFile=None):
     """
     Find junctions in bam file, record the number of reads showing usage (alpha1 reads) of each splice site forming the junction.
 
@@ -165,7 +240,7 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
     chroms = bam.references
 
     #Get addtional introns from file if user has specificed
-    additionalIntrons_plus = {} #dictionary to store introns seen in each chromosome across the whoel experiment (if user gave --intronFilePath)
+    additionalIntrons_plus = {} #dictionary to store introns seen in each chromosome across the whole experiment (if user gave --intronFilePath)
     additionalIntrons_minus = {} 
     additionalIntrons_unstranded = {}
     counter =0
@@ -189,7 +264,10 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                 additionalIntrons_unstranded[chrom].append((int(left),int(right)))
         #print('additionalIntronss:',additionalIntrons_unstranded )
         print('picked up list of ',counter, 'introns from preCombined intron file')
-            
+
+    isAnnotation=False
+    if annotationFile is not None:
+        isAnnotation = True
     #Now time to process the bams
     for chrom in chroms:
         if chrom not in chrom_index: #Add chromsome to index if not already there (sometimes there are no annotated genes in a scaffold)
@@ -207,9 +285,14 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                 
                 introns_plus=bam.find_introns(bamgen_plus)
                 introns_minus=bam.find_introns(bamgen_minus)
+                if isAnnotation:
+                    annotated_introns=extract_introns_from_gff(annotationFile, chrom)
                 if not dontCollapse:
                     print(chrom, "Collapsing duplicate introns to the majority strand..")
-                    introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus)
+                    if isAnnotation:
+                        introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns)
+                    else:
+                        introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus)
                 Intron_info =[(introns_plus,"+"),(introns_minus,"-")]
                 if intronFilePath != '': # if we are adding some additional introns from file
                     #print(additionalIntrons_plus[chrom])

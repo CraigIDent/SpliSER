@@ -87,7 +87,7 @@ def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aTyp
 		site2D_array.append([])
 
 	print('\n\nStep 1A: Finding Splice Sites / Counting Alpha reads...')
-	chrom_index, gene2D_array, site2D_array, = findAlphaCounts_pysam(inBAM,qChrom, qGene, int(maxIntronSize), isStranded, strandedType, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array, intronFilePath=intronFilePath) #We apply theqGene filter here, where the splice site objects are made
+	chrom_index, gene2D_array, site2D_array, = findAlphaCounts_pysam(inBAM,qChrom, qGene, int(maxIntronSize), isStranded, strandedType, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array, intronFilePath=intronFilePath, annotationFile=annotationFile) #We apply theqGene filter here, where the splice site objects are made
 	print('\n\nStep 2: Finding Beta reads')
 	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array)
 
