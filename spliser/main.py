@@ -208,11 +208,14 @@ def main():
 	elif (command == 'process' or command == 'combine' or command =='combineShallow' or command == 'preCombineIntrons') and (kwargs.get('isStranded') is True) and (kwargs.get('strandedType') is None):
 		parser.error("--isStranded requires parameter --strandedType/-s as fr or rf")
 	else: #otherwise
+		# Print the full command-line input for transparency
+		print("Command line input:", ' '.join(sys.argv))
+		print("")
 		# call appropriate functions
 		globals()[command](**kwargs)
 
 	stop = timeit.default_timer()
-	print("Total runtime (s): \t"+ str(stop - start))
+	print("Total runtime (s): \t{:.3f}".format(stop - start))
 #EOF
 
 if __name__ == "__main__":

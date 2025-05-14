@@ -28,7 +28,7 @@ This "version 1" release comes with performance improvements and several quality
 * Replaced some output columns with new info to help downstream processing.
 
 
-If you are looking for the SpliSER version mentioned in the published article (v0.1.8), you'll find it in the *archive* directory.
+If you are looking for the SpliSER version mentioned in the published article (v0.1.8), you'll find it (and the associated readme file) in the *archive* directory.
 <br>
 
 <hr>
@@ -221,7 +221,7 @@ Very similar to the output of the process command (above) , just with an extra c
 | 7 | alpha_count | How many times did we see this site being used in the sample |
 | 8 | beta1_count | How many reads (on the same strand, if applicable) map directly across the splice site without a gap, and don't also show splicing of a known competitor site |
 | 9 | beta2_count | How many reads show usage of a competitor site which means that this site probably wasn't used. Because the intron spans over this site, or because the flanking parts of the read cover this site in an ungapped (beta1) manner.  |
-| 10 | MultiGeneFlag | Flags 'True' if the SSE for this site uses sites from other genes. Otherwise 'False' (or 'NA' if running for a single gene). |
+| 10 | MultiGeneFlag | Flags 'True' if the SSE for this site uses sites from other genes *in any sample*. Otherwise 'False' (or 'NA' if running for a single gene). |
 | 11 | Other | Positions of sites involved in the SSE calculation of this site not covered by the next two columns, in a list format eg. [7228, 8479]  |
 | 12 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
 | 13 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |

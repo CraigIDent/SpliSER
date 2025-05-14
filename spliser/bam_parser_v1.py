@@ -48,7 +48,7 @@ def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter, an
     isAnnotation=False
     if len(annotation)>0:
         isAnnotation=True
-    print(isAnnotation)
+    #print(isAnnotation)
 
     # Check for overlapping introns by (start, end) tuple
     annotationOverrideCount = 0
@@ -82,8 +82,8 @@ def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter, an
             del introns_plus[intron]
 
     if isAnnotation:
-        print("Used annotation to determine strand of "+str(annotationOverrideCount)+" duplicate introns on opposite strands")
-    print("Used majority rule to resolve "+str(len(shared_introns)-annotationOverrideCount)+" duplicate introns on opposite strands")
+        print("used annotation to determine strand of "+str(annotationOverrideCount)+" duplicate introns on opposite strands")
+    print("used majority rule to resolve "+str(len(shared_introns)-annotationOverrideCount)+" duplicate introns on opposite strands")
 
     return introns_plus, introns_minus
 
@@ -126,16 +126,20 @@ def extract_introns_from_gff(gff_file, chrom, feature_type="exon"):
 
     return introns
 
-def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,annotationFile=""):
+def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,annotationFile=None):
     dontCollapse=False
     BAMPaths = BAMPathList.split(",") # stores the absolute path to each orginal bam file
 
     isAnnotation=False
-    if annotationFile != "":
+    if annotationFile is not None:
         isAnnotation=True
 
     print("Finding all introns across:", len(BAMPaths),"samples")
     print("Standed analysis: ", isStranded)
+    if annotationFile != "":
+        print("Annotation file: ",annotationFile)
+    else:
+        print("Annotation file: None")
     intronSet = set()
     #Find all introns for this experiment
     for bdx,bamFile in enumerate(BAMPaths):
@@ -170,7 +174,7 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,anno
                     for i in introns:
                         #print(i,strand)
                         intronSet.add((chrom, i[0],i[1],strand))
-    print(len(intronSet))
+    print("Number of unique introns: ",len(intronSet))
     intronOut = open(outputPath+".introns.tsv","w+")
     for line in sorted(intronSet):
         #print(line)
@@ -245,7 +249,7 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
     additionalIntrons_unstranded = {}
     counter =0
     if intronFilePath != '':
-        print("Loading introns from pre-combined intron file..")
+        print("Loading introns from pre-combined intron file...")
         for c in chroms:
             additionalIntrons_plus[c]=[]
             additionalIntrons_minus[c]=[]
@@ -276,7 +280,6 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                 gene2D_array.append([])
         if qChrom == chrom or qChrom == "All":
             chrom_idx = chrom_index.index(str(chrom))
-
             #If this is a stranded analysis, then make a generator for the forward and reverse strand reads (accounting for paired-end reads)
             #and package them up in tuples with the appropriate strand designation
             if isStranded:
@@ -288,7 +291,7 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                 if isAnnotation:
                     annotated_introns=extract_introns_from_gff(annotationFile, chrom)
                 if not dontCollapse:
-                    print(chrom, "Collapsing duplicate introns to the majority strand..")
+                    #print(chrom, "Collapsing duplicate introns to the majority strand..")
                     if isAnnotation:
                         introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns)
                     else:
@@ -299,7 +302,7 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                     #print({name: 0 for name in additionalIntrons_plus[chrom] if name not in introns_plus})
                     introns_supp_plus = {name: 0 for name in additionalIntrons_plus[chrom] if name not in introns_plus}
                     introns_supp_minus = {name: 0 for name in additionalIntrons_minus[chrom] if name not in introns_minus}
-                    print('added ', len(introns_supp_plus)+len(introns_supp_minus),' new introns from list')
+                    print(chrom, ': added ', len(introns_supp_plus)+len(introns_supp_minus),' new introns from list')
                     Intron_info.append((introns_supp_plus,"+"))
                     Intron_info.append((introns_supp_minus,"-"))
             else:
@@ -308,18 +311,12 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
                 Intron_info = [(introns_unstranded,"?")]
                 if intronFilePath != '': # if we are adding some introns from file
                     introns_supp_unstranded = {name: 0 for name in additionalIntrons_unstranded[chrom] if name not in introns_unstranded}
-                    print('added ', len(introns_supp_unstranded),' new introns from list')
+                    print(chrom, ': added ', len(introns_supp_unstranded),' new introns from list')
                     Intron_info.append((introns_supp_unstranded,"?"))
-    
-            #If user has provided an intron file path, then add these to the introns list with a zero count. 
-            if intronFilePath != '':
-                print("Loading introns from pre-combined intron file..")
-
-                pass
 
             #Now iterate over introns to fill in splice sites, where b is the bamgen tuple that we made before (linking the bam gen to the strand value)
             for introns,strand in Intron_info:
-                print("processing introns in region:",chrom, " strand:", strand)
+                #print("processing introns in region:",chrom, " strand:", strand)
                 for i in introns:
                     LinQGene = False
                     RinQGene = False

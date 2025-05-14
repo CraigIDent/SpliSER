@@ -73,7 +73,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 			allTitles.append(values[0]) # record the sample moniker
 			bedPaths.append(values[1]) # record the bed file paths
 			BAMPaths.append(values[2].rstrip()) # record BAM file paths
-		elif len(values) >= 0:
+		elif len(values) >= 0: #skip empty lines but flag other exceptional lines
 			print(str(allTitles), str(bedPaths), str(BAMPaths))
 			raise Exception('Samples File contains lines that do not have exactly 3 tab-separated columns')
 
@@ -169,7 +169,11 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 							sSite.addAlphaCount(int(vals[5]), idx) # add alpha Counts
 							sSite.addBeta1Count(int(vals[6]), idx) # add beta1 Counts
 							sSite.addBeta2SimpleCount(int(vals[7]), idx) # add beta2Simple Counts
-							sSite.setMultiGeneFlag(str(vals[8]))
+
+							#Only update multiGeneFlag with True values (so that the flag isn't just determned by the final sample we look at)
+							if not sSite.getMultiGeneFlag():
+								sSite.setMultiGeneFlag(eval(str(vals[8])))
+
 							#get other (mutually exclusive sites)
 							mPosList = literal_eval(str(vals[9]))
 							for m in mPosList:
@@ -280,6 +284,7 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 		assocGene = ""
 		partners = []
 		competitors = []
+		others = []
 		filledGap = False
 		posCounter = 0
 
@@ -385,7 +390,11 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 								sSite.addAlphaCount(int(vals[5]), idx) # add alpha Counts
 								sSite.addBeta1Count(int(vals[6]), idx) # add beta1 Counts
 								sSite.addBeta2SimpleCount(int(vals[7]), idx)  # add beta2Simple Counts
-								sSite.setMultiGeneFlag(str(vals[8])) 
+								
+								#Only update multiGeneFlag with True values (so that the flag isn't just determned by the final sample we look at)
+								if not sSite.getMultiGeneFlag():
+									sSite.setMultiGeneFlag(eval(str(vals[8])))
+
 								#get other (mutually exclusive sites)
 								mPosList = literal_eval(str(vals[9]))
 								for m in mPosList:
