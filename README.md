@@ -39,9 +39,34 @@ SpliSER has three commands which are used in succession across an analysis: *pro
 There is an additonal, optional,  *preCombineIntron* command which may save time, especially for big genomes/BAMs.
 There is also a second version of *combine* called *combineShallow* with an IO workaround for experiments with many samples.
 
-Here is the basic workflow:
+Here is the basic workflow for an RNA-seq experiment:
 
-<pre> * Optional (saves time in big experiments) ┌────────────────────────────┐ │ preCombineIntrons │ │ (all BAMs → introns.tsv) │ └────────────┬───────────────┘ │ * Required (once per sample) * Then combine across samples ┌────────────────────────────┐ ┌─────────────────────────────┐ │ process │ │ combine or combineShallow │ │ (BAM + introns → .tsv) ├───▶│ (many .tsv + BAMs → one) │ └────────────────────────────┘ └────────────┬────────────────┘ │ ▼ ┌────────────────────┐ │ output │ │ (SSEs for testing) │ └────────┬───────────┘ │ ▼ *DiffSpliSER.Rmd* </pre>
+* preCombineIntrons (optional but recommended for large files) 
+  - Input: multiple BAM files  
+  - Output: introns.tsv  
+
+    ▼
+
+* process  
+  - Input: BAM + optional introns.tsv  
+  - Output: per-sample .SpliSER.tsv  
+
+    ▼
+
+* combine / combineShallow  
+  - Input: paths to .SpliSER.tsv files + BAMs  
+  - Output: combined.tsv  
+
+    ▼
+
+* output  
+  - Input: combined.tsv  
+  - Output: files for DiffSpliSER or GWAS  
+
+    ▼
+
+* DiffSpliSER.Rmd
+
 
 **Some tips to get started:**
 
