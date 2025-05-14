@@ -41,32 +41,8 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 
 Here is the basic workflow for an RNA-seq experiment:
 
-* preCombineIntrons (optional but recommended for large files) 
-  - Input: multiple BAM files  
-  - Output: introns.tsv  
 
-    ▼
-
-* process  
-  - Input: BAM + optional introns.tsv  
-  - Output: per-sample .SpliSER.tsv  
-
-    ▼
-
-* combine / combineShallow  
-  - Input: paths to .SpliSER.tsv files + BAMs  
-  - Output: combined.tsv  
-
-    ▼
-
-* output  
-  - Input: combined.tsv  
-  - Output: files for DiffSpliSER or GWAS  
-
-    ▼
-
-* DiffSpliSER.Rmd
-
+<pre> ``` ┌──────────────────────────────────────┐ │ ▼ [ BAM1 ]──┐ [ BAM2 ]──┐ [ BAM3 ]──┐ preCombineIntrons (optional) │ │ │ │ ▼ ▼ ▼ ▼ process process process [ introns.tsv ] (BAM1) (BAM2) (BAM3) │ │ │ ▼ ▼ ▼ 1.SpliSER.tsv 2.SpliSER.tsv 3.SpliSER.tsv └───────────────┬────────────────────┘ ▼ combine / combineShallow ▼ [ combined.tsv ] ▼ output ▼ [ GWAS files ] [ DiffSpliSER ] ``` </pre>
 
 **Some tips to get started:**
 
