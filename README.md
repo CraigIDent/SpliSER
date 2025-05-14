@@ -41,7 +41,7 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 
 Here is the basic workflow for an RNA-seq experiment:
 
-
+```
 [ BAM1 ]──┐     [ BAM2 ]──┐     [ BAM3 ]──┐  	} preCombineIntrons (optional/fast)
          	    │             		│            		    │        			 │
          	    ▼		               	▼               	    ▼        			 ▼
@@ -58,6 +58,7 @@ Here is the basic workflow for an RNA-seq experiment:
                       				output
                        				   ▼
         			       [ GWAS files ] / [ DiffSpliSER ]
+```
 
 **Some tips to get started:**
 
