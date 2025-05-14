@@ -11,7 +11,7 @@
 <br>
 <br>
 
-**version 1.0 (9th May 2025)**
+**version 1.0 (14th May 2025)**
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
@@ -19,16 +19,16 @@ This "version 1" release comes with performance improvements and several quality
 
 * No more regtools: measure directly from BAM files (via Pysam)
 
+* A new pre-combine command (details below). 
+
 * Duplicate introns on both strands (template switching errors), are now merged by default.
 
-* Secondary and Supplementary alignments are now skipped by default.
-
-* A new pre-combine command (details below). 
+* Secondary and Supplementary alignments are now ignored by default.
 
 * Replaced some output columns with new info to help downstream processing.
 
 
-If you are looking for the SpliSER version mentioned in the published article (v0.1.8), you'll find it (and the associated readme file) in the *archive* directory.
+If you are looking for the SpliSER version mentioned in the published articles (v0.1.8), you'll find it (and the associated readme file) in the *archive* directory.
 <br>
 
 <hr>
@@ -38,6 +38,10 @@ SpliSER quantifies the utilisation of splice sites across the genome. Generating
 SpliSER has three commands which are used in succession across an analysis: *process*, *combine*, and *output*.
 There is an additonal, optional,  *preCombineIntron* command which may save time, especially for big genomes/BAMs.
 There is also a second version of *combine* called *combineShallow* with an IO workaround for experiments with many samples.
+
+Here is the basic workflow:
+
+<pre> * Optional (saves time in big experiments) ┌────────────────────────────┐ │ preCombineIntrons │ │ (all BAMs → introns.tsv) │ └────────────┬───────────────┘ │ * Required (once per sample) * Then combine across samples ┌────────────────────────────┐ ┌─────────────────────────────┐ │ process │ │ combine or combineShallow │ │ (BAM + introns → .tsv) ├───▶│ (many .tsv + BAMs → one) │ └────────────────────────────┘ └────────────┬────────────────┘ │ ▼ ┌────────────────────┐ │ output │ │ (SSEs for testing) │ └────────┬───────────┘ │ ▼ *DiffSpliSER.Rmd* </pre>
 
 **Some tips to get started:**
 
