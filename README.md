@@ -42,11 +42,11 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 Here is the basic workflow for an RNA-seq experiment:
 
 ```
-{    [BAM1]               [BAM2]              [BAM3]    } preCombineIntrons (optional/fast)
+{     [BAM1]                [BAM2]               [BAM3]   } preCombineIntrons (optional/fast)
          │                    │                    │             │
          ▼                    ▼                    ▼             ▼
-      process              process              process   ◄─[introns.tsv]
-      (BAM1)               (BAM2)            	   (BAM3)
+      process             process             process   ◄─[introns.tsv]
+      (BAM1)             (BAM2)             (BAM3)
         │                   │                   │
         ▼                   ▼                   ▼
    1.SpliSER.tsv       2.SpliSER.tsv       3.SpliSER.tsv
