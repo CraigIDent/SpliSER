@@ -88,6 +88,48 @@ pip install .
 #Check installation
 spliser -h
 ```
+<br>
+
+## preCombineIntrons
+
+The *preCombineIntrons* command generates a file containing the introns seen across all BAM files in an experiment. This means that the **process** command will already know which sites to measure, and the **combine** command won't spend so much time filling in missing sites in each sample. This is more efficient and saves time (~20 minutes vs 1.5 hours for 4x 5 GB BAM files). If you want to use this, it should be applied *before* running the **process** command. You will need to run this command once per experiment; it will then produce a .introns.tsv file which can be taken as input for each *process* command. 
+
+**What will I need for this step?**<br>
+1. A list of all the paths to your BAM files in a comma-separated list (eg. /path/to/control1.bam,/path/to/control2.bam,/path/to/test1.bam,/path/to/test2.bam)
+<br>
+
+### parameters
+
+The * preCombineIntrons* command requires the following two input parameters:
+
+| Required Parameter      | Description |
+| ----------- | ----------- |
+| -L &nbsp;    \--ListOfBAMFiles      | A comma-separated (no spaces) list of BAM files in this experiment (which will be later combined)     |
+| -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting .introns.tsv file will be written      |
+
+* The **outputPath** needs to end with a filename  prefix, so if your output path reads '-o /path/to/directory/WTvsMUT'; this will produce a file WTvsMUT.introns.tsv in the folder /path/to/directory.
+
+| Optional Parameter      | Description |
+| ----------- | ----------- |
+| --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
+| -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
+| -A &nbsp;    \--annotationFile | The path to a GFF or GTF file matching the genome to which your RNA-seq data was aligned. When used with --isStranded, providing this file can improve the accuracy of strand calling.  |
+| -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
+<br>
+
+### result
+
+A 4-column tsv file summarising introns seen in any sample for this experiment.
+| Column  | Description |
+| ----------- | ----------- |
+| 1 | The chromosome or scaffold where the intron occurs (ie Chr1) |
+| 2 | The leftmost position of the intron. The position immediately left of the left site of the splice junction, in the reference genome. |
+| 3 | The rightmost position of the intron. The position immediately left of the right site of the splice junction, in the reference genome. |
+| 4 |  The strand on which the intron occurred, if known, '+', '-', or '?' |
+
+<br>
+<br>
+<br>
 
 ## process
 
@@ -261,47 +303,7 @@ spliser combine -h
 ```
 <br>
 <br>
-<br>
 
-## preCombineIntrons
-
-The *preCombineIntrons* command generates a file containing the introns seen across all BAM files in an experiment. This means that the **process** command will already know which sites to measure, and the **combine** command won't spend so much time filling in missing sites in each sample. This is more efficient and saves time (~20 minutes vs 1.5 hours for 4x 5 GB BAM files). If you want to use this, it should be applied *before* running the **process** command. You will need to run this command once per experiment; it will then produce a .introns.tsv file which can be taken as input for each *process* command. 
-
-**What will I need for this step?**<br>
-1. A list of all the paths to your BAM files in a comma-separated list (eg. /path/to/control1.bam,/path/to/control2.bam,/path/to/test1.bam,/path/to/test2.bam)
-<br>
-
-### parameters
-
-The * preCombineIntrons* command requires the following two input parameters:
-
-| Required Parameter      | Description |
-| ----------- | ----------- |
-| -L &nbsp;    \--ListOfBAMFiles      | A comma-separated (no spaces) list of BAM files in this experiment (which will be later combined)     |
-| -o &nbsp;    \--outputPath  | The path to a directory (including sample prefix) where the resulting .introns.tsv file will be written      |
-
-* The **outputPath** needs to end with a filename  prefix, so if your output path reads '-o /path/to/directory/WTvsMUT'; this will produce a file WTvsMUT.introns.tsv in the folder /path/to/directory.
-
-| Optional Parameter      | Description |
-| ----------- | ----------- |
-| --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
-| -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
-| -A &nbsp;    \--annotationFile | The path to a GFF or GTF file matching the genome to which your RNA-seq data was aligned. When used with --isStranded, providing this file can improve the accuracy of strand calling.  |
-| -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
-<br>
-
-### result
-
-A 4-column tsv file summarising introns seen in any sample for this experiment.
-| Column  | Description |
-| ----------- | ----------- |
-| 1 | The chromosome or scaffold where the intron occurs (ie Chr1) |
-| 2 | The leftmost position of the intron. The position immediately left of the left site of the splice junction, in the reference genome. |
-| 3 | The rightmost position of the intron. The position immediately left of the right site of the splice junction, in the reference genome. |
-| 4 |  The strand on which the intron occurred, if known, '+', '-', or '?' |
-
-<br>
-<br>
 
 ### combineShallow
 
