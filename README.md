@@ -181,7 +181,7 @@ spliser process -h
 
 The *combine* command takes a set of *processed* files and combines them into a single experiment. *Combine* interpolates all of the splice-site data across your samples. If a splice-site was observed in one sample but not another, SpliSER will get the associated read counts in that second sample for that site. The *combine* command produces a .combined.tsv file which holds a complete set of information for all splice-sites observed across all of your samples. This is usually the longest step.
 
-**Note:**given how long this step can take (it is expensive to lookup individual sites across multiple BAM files one by one). I've added a new command **preCombineIntrons** (described further down) which might speed up the pipeline. 
+**Note:**given how long this step can take (it is expensive to lookup individual sites across multiple BAM files one by one). I've added a new command **preCombineIntrons** (described further down) which speeds up the pipeline. 
 <br>
 
 **What will I need for this step?**<br>
@@ -250,8 +250,7 @@ Very similar to the output of the process command (above) , just with an extra c
 | 12 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
 | 13 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
 
-*Known issues:* Some reads could technically be classified as both beta1 and beta2 reads. If a read maps across the splice site, and shows usage of a site further downstream, but there is no evidence of these two sites competing for the same partner, then it will be called beta1. This doesn't make any difference for the SSE calculation, it can just help sometimes to look at these values internally to make sense of the splicing pattern. 
-Sometimes competition between two sites is only revealed when combining multiple samples. The combine step doesn't recalculate these if the site has already been measured. So if you don't use the preCombineIntrons command, then sometimes a site will inherit the naive distribution of beta1/beta2 counts of the original sample. These values are internal, and this issue doesn't make any difference to the final SSE value, or the alpha/beta counts used for DiffSpliSER.
+*Known issues:*  The combine step doesn't recalculate beta1 and beta2 counts if the site has already been measured. So if you don't use the preCombineIntrons command, then sometimes a site will inherit the naive distribution of beta1/beta2 counts of the original sample. These values are internal, and this issue doesn't make any difference to the final SSE value, or the alpha/beta counts used for DiffSpliSER.
 
 <br>
 
