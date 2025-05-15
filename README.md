@@ -42,7 +42,7 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 Here is the basic workflow for an RNA-seq experiment:
 
 ```
-{      [BAM1]              [BAM2]              [BAM3]   } preCombineIntrons (optional/fast)
+{      [BAM1]              [BAM2]              [BAM3]   } preCombineIntrons (recommendedl/fast)
          │                   │                   │              │
          ▼                   ▼                   ▼              ▼
       process             process             process   ◄─[introns.tsv]
@@ -250,6 +250,9 @@ Very similar to the output of the process command (above) , just with an extra c
 | 12 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
 | 13 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
 
+*Known issues:* Some reads could technically be classified as both beta1 and beta2 reads. If a read maps across the splice site, and shows usage of a site further downstream, but there is no evidence of these two sites competing for the same partner, then it will be called beta1. This doesn't make any difference for the SSE calculation, it can just help sometimes to look at these values internally to make sense of the splicing pattern. 
+Sometimes competition between two sites is only revealed when combining multiple samples. The combine step doesn't recalculate these if the site has already been measured. So if you don't use the preCombineIntrons command, then sometimes a site will inherit the naive distribution of beta1/beta2 counts of the original sample. These values are internal, and this issue doesn't make any difference to the final SSE value, or the alpha/beta counts used for DiffSpliSER.
+
 <br>
 
 Help for this command can also be viewed in terminal using:
@@ -263,7 +266,7 @@ spliser combine -h
 
 ## preCombineIntrons
 
-The *preCombineIntrons* command generates a file containing the introns seen across all BAM files in an experiment. This means that the **process** command will already know which sites to measure, and the **combine** command won't spend so much time filling in missing sites in each sample. This is more efficient and saves time (~20 minutes vs 1.5 hours for 4x 5 GB BAM files). If you want to use this, it should be applied *before* running the **process** command. You will need to run this command once per experiment; it will then produce a .introns.tsv file which can be taken as input for the *process* command. 
+The *preCombineIntrons* command generates a file containing the introns seen across all BAM files in an experiment. This means that the **process** command will already know which sites to measure, and the **combine** command won't spend so much time filling in missing sites in each sample. This is more efficient and saves time (~20 minutes vs 1.5 hours for 4x 5 GB BAM files). If you want to use this, it should be applied *before* running the **process** command. You will need to run this command once per experiment; it will then produce a .introns.tsv file which can be taken as input for each *process* command. 
 
 **What will I need for this step?**<br>
 1. A list of all the paths to your BAM files in a comma-separated list (eg. /path/to/control1.bam,/path/to/control2.bam,/path/to/test1.bam,/path/to/test2.bam)

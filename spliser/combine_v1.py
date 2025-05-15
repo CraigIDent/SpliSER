@@ -55,7 +55,41 @@ def outputCombinedLines(outTSV, site, gene,qGene,allTitles):
 		outTSV.write(str(site.getPartnerCount(idx))+"\t")
 		outTSV.write(str(site.getCompetitorPos())+"\n")
 
+def buildGlobalCompetitorMap(samplesFile):
+	#Read in the samples file and get the SpliSER.tsv file paths
+	inPaths = []
+	for line in open(samplesFile,'r'):
+		values = line.split("\t")
+		if len(values) ==3:
+			inPaths.append(values[1]) # formerly bedPaths
 
+	GlobalPartners={}
+	#for each line in each file, add each partner for each site
+	for i in inPaths:
+		for ldx,line in enumerate(open(i,'r')):
+			if ldx >0:
+				vals=line.rstrip().split("\t")
+				site_id=vals[0]+"_"+vals[1]+"_"+vals[2]
+				site_partners=literal_eval(vals[10]) # should be a dictionary of partners
+				for p in site_partners:
+					p_id=vals[0]+"_"+str(p)+"_"+vals[2] #Assumes the same strand
+					if site_id not in GlobalPartners:
+						GlobalPartners[site_id] = set()
+					GlobalPartners[site_id].add(p_id)
+	#print(GlobalPartners) #working
+
+	#For each site now find global competitors
+	GlobalCompetitors={}
+	for site in GlobalPartners:
+		partners=GlobalPartners[site]
+		competitors = set()
+		for p in partners:
+			for c in GlobalPartners[p]:
+				if c != site:
+					competitors.add(c.split("_")[1]) # get the competitor positions
+		GlobalCompetitors[site] = sorted(list(competitors))
+	#print(GlobalCompetitors) #working
+	return GlobalPartners, GlobalCompetitors
 
 def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 	print('Combining samples...')
@@ -82,15 +116,10 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 	chromsInOrder = deduceChromOrder(bedPaths)
 	print("order of genomic regions deduced: {}".format(chromsInOrder))
 
-	#Iterate bed files
-	print('Iterating through files in parallel, to interleave lines and fill gaps.')
-	iters = []
-	for file in bedPaths: # make a bed file line generator for each bed file
-		iters.append((open(file, 'r')))
-
-	for iter in iters: #skip header line
-		temp = next(iter, None)
-
+	#build a global partner/competitor map 
+	print("building global competitor map...")
+	allPartners, allCompetitors = buildGlobalCompetitorMap(samplesFile) # returns a dictionary of sites (key=chrom_sitePos_strand) and their competitors (value=list of positions)
+	print("done")
 
 	#initialise data structures needed for iterating along bed files
 	currentVals = [['']*11]*samples #array to hold the current line for each bed file - 11 elements
@@ -104,6 +133,14 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 	iterGo = [True]*samples #initialise iterGo for each sample
 	iterDone = [False]*samples
 
+	#Iterate bed files
+	print('Iterating through files in parallel, to interleave lines and fill gaps.')
+	iters = []
+	for file in bedPaths: # make a bed file line generator for each bed file
+		iters.append((open(file, 'r')))
+
+	for iter in iters: #skip header line
+		temp = next(iter, None)
 
 	#load up intial values
 	count = 0
@@ -160,6 +197,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 					print("Combining data for site# "+str(count)+"...")
 			else: #if we are still adding new values
 				#add values into SpliceSite Object
+				#Add another loop here to get partners/competitors/others from all samples before filling any check_bam calls are made
 				for idx, vals in enumerate(currentVals):
 						if vals[0] == currentChrom and int(vals[1]) == lowestPos and iterDone[idx] ==False and (isStranded==False or vals[2] == lowestPosStrand): #if this sample has values for the splice site (and if it's a stranded analysis we are looking at the same strand)
 							iterGo[idx] = True #if we take values from this file, then we want to get a new line next time
@@ -189,12 +227,28 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 							for key, val in pCounts.items():
 								partners.append(key)
 								sSite.addPartnerCount(key, val ,idx)
-							#read competitor positions as a list and add to the
-							cPosList = literal_eval(str(vals[11]))
-							for c in cPosList:
-								competitors.append(c)
-								sSite.addCompetitorPos(c)
+							#skip inidividual competitor assignment - now handle globally.
+							#cPosList = literal_eval(str(vals[11]))
+							#for c in cPosList:
+							#	competitors.append(c)
+							#	sSite.addCompetitorPos(c)
 
+				#Here we still haven't updated all of the competitor associations given all of the now-known partners can competitors from different samples
+				#ie in sample 1, A partners only with C, in sample 2: only B partners with C... we need to inform the site that A and C are now in competition.
+				#Find competitorPositions of each site
+				site_competitors = allCompetitors[str(sSite.getChromosome())+"_"+str(sSite.getPos())+"_"+str(sSite.getStrand())]
+				site_competitors = [int(x) for x in site_competitors]
+				for c in site_competitors:
+					sSite.addCompetitorPos(c)
+				
+				#Correct other sites which are doubled up with newly recognised partners or competitors
+				filtered_others = [x for x in sSite.getMutuallyExclusivePos() if x not in partners and x not in site_competitors]
+				sSite.setMutuallyExclusivePos(filtered_others)
+
+				#Repeat the loop of samples but this time fill missing values (since competitors, partners etc are all fully filled)				
+				for idx, vals in enumerate(currentVals):
+						if vals[0] == currentChrom and int(vals[1]) == lowestPos and iterDone[idx] ==False and (isStranded==False or vals[2] == lowestPosStrand): #if this sample has values for the splice site (and if it's a stranded analysis we are looking at the same strand)
+							pass
 						else: #if this sample doesn't have values for the spliceSite
 							#find beta1 and beta2Simple counts for the site, using partners and competitors
 							if qGene == 'All' or qGene == assocGene:
@@ -234,6 +288,15 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 			bedPaths.append(values[1]) # record the bed file paths
 			BAMPaths.append(values[2].rstrip()) # record BAM file paths
 
+	print('Establishing order of genomic regions...')
+	chromsInOrder = deduceChromOrder(bedPaths)
+	print("order of genomic regions deduced: {}".format(chromsInOrder))
+
+	#build a global partner/competitor map 
+	print("building global competitor map...")
+	allPartners, allCompetitors = buildGlobalCompetitorMap(samplesFile) # returns a dictionary of sites (key=chrom_sitePos_strand) and their competitors (value=list of positions)
+	print("done")
+
 	print('Reading SpliSER processed files into memory')
 	#instead of an iterator, make a list of a list of lines
 	bedLines = []
@@ -256,10 +319,6 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 		bedLines.append(line_list)
 		line_counter.append(0)
 		max_lines.append(maxi)
-
-	print('Establishing order of genomic regions...')
-	chromsInOrder = deduceChromOrder(bedPaths)
-	print("order of genomic regions deduced: {}".format(chromsInOrder))
 
 	#initialise data structures needed for iterating along bed files
 	currentVals = [['']*11]*samples #array to hold the current line for each bed file - 11 columns
@@ -411,21 +470,41 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 								for key, val in pCounts.items():
 									partners.append(key)
 									sSite.addPartnerCount(key, val ,idx)
-								#read competitor positions as a list and add to the
-								cPosList = literal_eval(str(vals[11]))
-								for c in cPosList:
-									competitors.append(c)
-									sSite.addCompetitorPos(c)
-
+								
+								#skip inidividual competitor assignment - now handle globally.
+								#cPosList = literal_eval(str(vals[11]))
+								#for c in cPosList:
+								#	competitors.append(c)
+								#	sSite.addCompetitorPos(c)
+						
+						#Here we still haven't updated all of the competitor associations given all of the now-known partners can competitors from different samples
+						#ie in sample 1, A partners only with C, in sample 2: only B partners with C... we need to inform the site that A and C are now in competition.
+						#Find competitorPositions of each site
+						site_competitors = allCompetitors[str(sSite.getChromosome())+"_"+str(sSite.getPos())+"_"+str(sSite.getStrand())]
+						site_competitors = [int(x) for x in site_competitors]
+						for c in site_competitors:
+							sSite.addCompetitorPos(c)
+						
+						#Correct other sites which are doubled up with newly recognised partners or competitors
+						filtered_others = [x for x in sSite.getMutuallyExclusivePos() if x not in partners and x not in site_competitors]
+						sSite.setMutuallyExclusivePos(filtered_others)
+						
+						for idx, vals in enumerate(currentVals):
+							if vals[0] == currentChrom and int(vals[1]) == lowestPos and iterDone[idx] ==False and (isStranded==False or vals[2] == lowestPosStrand): #if this sample has values for the splice site (and if it's a stranded analysis we are looking at the same strand)
+								pass
 							else: #if this sample doesn't have values for the spliceSite
 								#find beta1 and beta2Simple counts for the site, using partners and competitors
+								#Issue, will calculate beta1 and beta2 before partners and competitors have been found from other samples. Leading to assymetry and incorrect values
 								if qGene == 'All' or qGene == assocGene:
 									filledGap = True
 									checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType)
 									sSite.setSSE(0.000,idx)
 								#output lines for this splice site
 						if qGene == 'All' or qGene == assocGene:
-							outputCombinedLines(outTSV,sSite, assocGene,qGene,allTitles)	
+							outputCombinedLines(outTSV,sSite, assocGene,qGene,allTitles)
+
+					#Repeat the loop of samples but this time fill missing values (since competitors, partners etc are all fully filled)				
+
 					else:	# If there were not enough samples recording the splice site to pass minSamples
 						print("Skipped site {} for insufficient evidence, only {} samples with Site using minimum reads".format(lowestPos,posCounter))
 						#print(lowestPos)

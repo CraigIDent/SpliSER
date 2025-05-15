@@ -212,6 +212,9 @@ class Site:
 	def setMultiGeneFlag(self, value):
 		self.multiGeneFlag = value
 
+	def setMutuallyExclusivePos(self, l):
+		self.MutuallyExclusivePos = l
+
 #BETTERS
 	def addAlphaCount(self, count, sample):
 		self.alphaCounts[sample] += count
