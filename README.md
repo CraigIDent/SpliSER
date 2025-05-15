@@ -42,9 +42,9 @@ There is also a second version of *combine* called *combineShallow* with an IO w
 Here is the basic workflow for an RNA-seq experiment:
 
 ```
-[BAM1] ──┐           [BAM2] ──┐           [BAM3] ──┐   } preCombineIntrons (optional)
-        │                   │                   │            │
-        ▼                   ▼                   ▼            ▼
+[BAM1] ──┐           [BAM2] ──┐           [BAM3] ──┐   } preCombineIntrons (optional/fast)
+         │                    │                    │             │
+         ▼                    ▼                    ▼             ▼
     process             process             process       ◄─[introns.tsv]
     (BAM1)              (BAM2)              (BAM3)
         │                   │                   │
@@ -52,13 +52,13 @@ Here is the basic workflow for an RNA-seq experiment:
   1.SpliSER.tsv      2.SpliSER.tsv      3.SpliSER.tsv
          └──────────────┬───────────────┘
                         ▼
-          combine / combineShallow
+              combine / combineShallow
                         ▼
                  [combined.tsv]
                         ▼
                       output
                         ▼
-       [GWAS files]           [DiffSpliSER]
+       [GWAS files]  /  [DiffSpliSER]
 
 ```
 
@@ -262,7 +262,7 @@ spliser combine -h
 
 ## preCombineIntrons
 
-The *preCombineIntrons* command generates a file containing the introns seen across all BAM files in an experiment. This means that the **process** command will already know which sites to measure, and the **combine** command won't spend so much time filling in missing sites in each sample. This is more efficient and saves time. If you want to use this, it should be applied *before* running the **process** command. You will need to run this command once per experiment; it will then produce a .introns.tsv file which can be taken as input for the *process* command. 
+The *preCombineIntrons* command generates a file containing the introns seen across all BAM files in an experiment. This means that the **process** command will already know which sites to measure, and the **combine** command won't spend so much time filling in missing sites in each sample. This is more efficient and saves time (6 minutes vs 1.5 hours for 4x 5 GB BAM files). If you want to use this, it should be applied *before* running the **process** command. You will need to run this command once per experiment; it will then produce a .introns.tsv file which can be taken as input for the *process* command. 
 
 **What will I need for this step?**<br>
 1. A list of all the paths to your BAM files in a comma-separated list (eg. /path/to/control1.bam,/path/to/control2.bam,/path/to/test1.bam,/path/to/test2.bam)
