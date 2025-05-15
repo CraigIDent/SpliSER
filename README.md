@@ -50,16 +50,16 @@ Here is the basic workflow for an RNA-seq experiment:
         │                   │                   │
         ▼                   ▼                   ▼
    1.SpliSER.tsv       2.SpliSER.tsv       3.SpliSER.tsv
-         └────────────────┼────────────────────┘
-                       [samples.tsv] (manually create)
-                          ▼
-                  combine / combineShallow
-                          ▼
-                    [combined.tsv]
-                          ▼
-                        output
-                          ▼
-           [GWAS files]  /  [DiffSpliSER]
+         └──────────────────┼──────────────────┘
+                     [samples.tsv] (manually create)
+                            ▼
+                    combine / combineShallow
+                            ▼
+                      [combined.tsv]
+                            ▼
+                          output
+                            ▼
+             [GWAS files]  /  [DiffSpliSER]
 
 ```
 
