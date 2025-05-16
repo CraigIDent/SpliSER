@@ -241,10 +241,15 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 				for c in site_competitors:
 					sSite.addCompetitorPos(c)
 				
+
 				#Correct other sites which are doubled up with newly recognised partners or competitors
 				filtered_others = [x for x in sSite.getMutuallyExclusivePos() if x not in partners and x not in site_competitors]
+				#if sSite.getPos() == 32729:
+				#	print(partners, site_competitors, sSite.getMutuallyExclusivePos(), filtered_others)
 				sSite.setMutuallyExclusivePos(filtered_others)
-
+				#Issue, Comp splicing in checkbam only comes in if it is using a known partner. No checks to see if other sites are already in comp.  
+				#if sSite.getPos() == 32729:
+				#	print(partners, site_competitors, sSite.getMutuallyExclusivePos())				
 				#Repeat the loop of samples but this time fill missing values (since competitors, partners etc are all fully filled)				
 				for idx, vals in enumerate(currentVals):
 						if vals[0] == currentChrom and int(vals[1]) == lowestPos and iterDone[idx] ==False and (isStranded==False or vals[2] == lowestPosStrand): #if this sample has values for the splice site (and if it's a stranded analysis we are looking at the same strand)
