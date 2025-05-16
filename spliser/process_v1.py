@@ -29,14 +29,14 @@ def outputBedFile(outputPath,chrom_index, site2D_array,qGene):
 			outBed.write(str(site.getCompetitorPos())+"\n")
 	outBed.close()
 
-def processSites(inBAM, qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array, sample = 0, numsamples = 1):
+def processSites(inBAM, qChrom, isStranded, strandedType, capCounts, chrom_index, gene2D_array,site2D_array, sample = 0, numsamples = 1):
 	print('Processing sample '+ str(int(sample)+1)+' out of '+str(numsamples))
 	for c in chrom_index:
 		if qChrom == c or qChrom =="All":
 			print("Processing region "+str(c))
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
 				#Go assign Beta 1 type reads from BAM file
-				checkBam_pysam(inBAM, site, sample, isStranded, strandedType)
+				checkBam_pysam(inBAM, site, sample, isStranded, strandedType, capCounts)
 			#Once this is done for all sites, we can calculate SSE
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
 				#findBeta2Counts(site, numsamples)
@@ -69,7 +69,7 @@ def flagSiteGenes(chrom_index,site2D_array):
 				site.setMultiGeneFlag(True)
 
 
-def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, site2D_array=[], intronFilePath = ''):
+def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, capCounts, site2D_array=[], intronFilePath = ''):
 	print('Processing')
 	if isStranded:
 		print('Stranded Analysis {}'.format(strandedType))
@@ -89,7 +89,9 @@ def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aTyp
 	print('\n\nStep 1A: Finding Splice Sites / Counting Alpha reads...')
 	chrom_index, gene2D_array, site2D_array, = findAlphaCounts_pysam(inBAM,qChrom, qGene, int(maxIntronSize), isStranded, strandedType, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array, intronFilePath=intronFilePath, annotationFile=annotationFile) #We apply theqGene filter here, where the splice site objects are made
 	print('\n\nStep 2: Finding Beta reads')
-	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array)
+	if capCounts:
+		print("\t(Capping beta read counts at 2000, or when SSE >0.000)")
+	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, capCounts, chrom_index, gene2D_array,site2D_array)
 
 	
 	if annotationFile is not None and qGene == 'All':

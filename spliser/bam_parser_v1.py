@@ -463,21 +463,40 @@ def parse_cigar(cigarstring):
 	return ops
 
 
-def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType):
+def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType, capCounts):
 	targetPos = sSite.getPos()
 	competitors = sSite.getCompetitorPos()
 	siteStrand = sSite.getStrand()
 	siteChrom = sSite.getChromosome()
+	siteAlpha = sSite.getAlphaCount(sample)
 	partners = []
 	for partner, counts in sSite.getPartnerCounts().items():
 		partners.append(partner)
 
 	mode = sys.argv[1]
 
-	bam = pysam.AlignmentFile(bamFile, "rb")
+	bam = pysam.AlignmentFile(bamFile, "rb",require_index=False)
+	#TODO count reads here
+	#def check_read(read,): #define function inside checkbam so we can steal siteStrand
+	#if not read.is_unmapped and not read.is_secondary and not read.is_supplementary:
+	#	#print(read.flag)
+	#	return True 
+	#return False
+	#readCount= bam.count(contig=siteChrom, start=targetPos, end=targetPos+1, read_callback=check_read)
+	#if reads too high
+	#print(sSite.getPos(),readCount)
+	#else:
+	
 	bamgen = (read for read in bam.fetch(siteChrom, targetPos, targetPos + 2) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
-
 	for read in bamgen:
+		#Implement smartCapping . Alpha = 0
+		if capCounts:
+			if siteAlpha == 0 and sSite.getBeta1Count(sample)+sSite.getBeta2SimpleCount(sample)>=2000: #If we have counted past what 3 decimal places can represent
+				#print("smartCapping0",sSite.getPos(), siteAlpha, sSite.getBeta1Count(sample)+sSite.getBeta2SimpleCount(sample))
+				break
+			elif siteAlpha > 0 and sSite.getBeta1Count(sample)+sSite.getBeta2SimpleCount(sample)>=siteAlpha*2000: #If we have counted past what 3 decimal places can represent
+				#print("smartCapping+",sSite.getPos(), siteAlpha, sSite.getBeta1Count(sample)+sSite.getBeta2SimpleCount(sample))
+				break
 		cPos = -1 #stores position of competitor site, if found
 		leftBound = read.reference_start
 		rightBound = read.reference_end

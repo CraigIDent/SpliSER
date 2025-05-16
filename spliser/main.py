@@ -169,6 +169,7 @@ def main():
 	parser_process.add_argument('-m', '--maxIntronSize', dest='maxIntronSize', nargs='?', default=0, type=int, required=False, help="optional: required if passing the --gene parameter, the max intron size used in aligning the bam file")
 	parser_process.add_argument('--isStranded', dest='isStranded', default=False, action='store_true')
 	parser_process.add_argument('-s', '--strandedType', dest='strandedType', nargs='?', type=str, required=False, help="optional: Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR - default : fr")
+	parser_process.add_argument('--capCounts', dest='capCounts', default=False, action='store_true',help="optional flag: Early stop beta-read counting (proportional to alpha reads). ie stop of read counting for rare sites in high-coverage regions once SSE reaches 0.000. Stop counting beta reads when they exceed 2000 (if alpha = 0) or otherwise 2000*alpha. SSE will still be accurate to 3 decimal places, beta1/beta2 ratios (internal values) may be biased.")
 	parser_process.add_argument('-I','--intronFilePath', dest='intronFilePath',nargs='?',default='',type=str,required=False,help="optional: Path to the output of preCombineIntrons command for this experiment, containing all introns seen in this experiment")
 	#Parser for arguments when user calls command 'combine'
 	parser_combine = subparsers.add_parser('combine')
@@ -177,6 +178,7 @@ def main():
 	parser_combine.add_argument('-g', '--gene', dest='qGene', nargs='?', default='All', type=str, help="optional:Limit SpliSER to splice sites falling in a single locus - default All", required=False)
 	parser_combine.add_argument('--isStranded', dest='isStranded', default=False, action='store_true')
 	parser_combine.add_argument('-s', '--strandedType', dest='strandedType', nargs='?', default="fr", type=str, required=False, help="optional: Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR - default : fr")
+	parser_combine.add_argument('--capCounts', dest='capCounts', default=False, action='store_true',help="optional flag: Early stop beta-read counting (proportional to alpha reads). ie stop of read counting for rare sites in high-coverage regions once SSE reaches 0.000. Stop counting beta reads when they exceed 2000 (if alpha = 0) or otherwise 2000*alpha. SSE will still be accurate to 3 decimal places, beta1/beta2 ratios (internal values) may be biased.")
 
 	parser_combineShallow = subparsers.add_parser('combineShallow')
 	parser_combineShallow.add_argument('-S', '--samplesFile', dest='samplesFile', required=True, help="A three-column .tsv file, each line containing a sample name, the absolute path to a processed .SpliSER.tsv file input, and the absolute path to the original bam file")
@@ -187,6 +189,7 @@ def main():
 	parser_combineShallow.add_argument('-r', '--minReads', dest='minReads',required=False, nargs='?', default=10, type=int, help="For optional filtering: The minimum number of reads giving evidence for a splice site needed for downstream analyses - default: 10")
 	parser_combineShallow.add_argument('-e','--minSSE', dest='minSSE',required=False, nargs='?', default=0.00, type=float, help="For optional filtering: The minimum SSE of a site for a given sample, for it to be considered in the --minSamples filter - default: 0.00")
 	parser_combineShallow.add_argument('-s', '--strandedType', dest='strandedType', nargs='?', type=str, required=False, help="optional: Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR - default : fr")
+	parser_combineShallow.add_argument('--capCounts', dest='capCounts', default=False, action='store_true',help="optional flag: Early stop beta-read counting (proportional to alpha reads). ie stop of read counting for rare sites in high-coverage regions once SSE reaches 0.000. Stop counting beta reads when they exceed 2000 (if alpha = 0) or otherwise 2000*alpha. SSE will still be accurate to 3 decimal places, beta1/beta2 ratios (internal values) may be biased.")
 
 	parser_output = subparsers.add_parser('output')
 	parser_output.add_argument('-S', '--samplesFile', dest='samplesFile', required=True, help="the three-column .tsv file you used to combine the samples in the previous step")

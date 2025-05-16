@@ -91,8 +91,9 @@ def buildGlobalCompetitorMap(samplesFile):
 	#print(GlobalCompetitors) #working
 	return GlobalPartners, GlobalCompetitors
 
-def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
+def combine(samplesFile, outputPath,qGene, isStranded, strandedType, capCounts):
 	print('Combining samples...')
+
 	outTSV = open(outputPath+".combined.tsv", 'w+')
 	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
 	#Process the input paths file
@@ -135,6 +136,8 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 
 	#Iterate bed files
 	print('Iterating through files in parallel, to interleave lines and fill gaps.')
+	if capCounts:
+		print("\t(Capping beta read counts at 2000, or when SSE >0.000)")
 	iters = []
 	for file in bedPaths: # make a bed file line generator for each bed file
 		iters.append((open(file, 'r')))
@@ -244,12 +247,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 
 				#Correct other sites which are doubled up with newly recognised partners or competitors
 				filtered_others = [x for x in sSite.getMutuallyExclusivePos() if x not in partners and x not in site_competitors]
-				#if sSite.getPos() == 32729:
-				#	print(partners, site_competitors, sSite.getMutuallyExclusivePos(), filtered_others)
-				sSite.setMutuallyExclusivePos(filtered_others)
-				#Issue, Comp splicing in checkbam only comes in if it is using a known partner. No checks to see if other sites are already in comp.  
-				#if sSite.getPos() == 32729:
-				#	print(partners, site_competitors, sSite.getMutuallyExclusivePos())				
+				sSite.setMutuallyExclusivePos(filtered_others)				
 				#Repeat the loop of samples but this time fill missing values (since competitors, partners etc are all fully filled)				
 				for idx, vals in enumerate(currentVals):
 						if vals[0] == currentChrom and int(vals[1]) == lowestPos and iterDone[idx] ==False and (isStranded==False or vals[2] == lowestPosStrand): #if this sample has values for the splice site (and if it's a stranded analysis we are looking at the same strand)
@@ -258,7 +256,8 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 							#find beta1 and beta2Simple counts for the site, using partners and competitors
 							if qGene == 'All' or qGene == assocGene:
 								filledGap = True
-								checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType)
+								#print("checkBam",currentChrom, sSite.getPos())
+								checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType, capCounts)
 								sSite.setSSE(0.000,idx)
 				#output lines for this splice site
 				if qGene == 'All' or qGene == assocGene:
@@ -275,8 +274,9 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 	print('Filled in Beta read counts for {} Sites not detected in some samples'.format(filledCount))
 
 
-def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minReads, minSSE, strandedType):
+def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minReads, minSSE, strandedType, capCounts):
 	print('Combining samples...')
+
 	outTSV = open(outputPath+".combined.tsv", 'w+')
 	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
 	#Process the input paths file
@@ -303,6 +303,8 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 	print("done")
 
 	print('Reading SpliSER processed files into memory')
+	if capCounts:
+		print("\t(Capping beta read counts at 2000, or when SSE >0.000)")
 	#instead of an iterator, make a list of a list of lines
 	bedLines = []
 	line_counter = []
@@ -502,7 +504,7 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 								#Issue, will calculate beta1 and beta2 before partners and competitors have been found from other samples. Leading to assymetry and incorrect values
 								if qGene == 'All' or qGene == assocGene:
 									filledGap = True
-									checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType)
+									checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType, capCounts)
 									sSite.setSSE(0.000,idx)
 								#output lines for this splice site
 						if qGene == 'All' or qGene == assocGene:
