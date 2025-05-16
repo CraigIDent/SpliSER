@@ -169,7 +169,7 @@ There are several optional parameters, which add gene annotations, flag stranded
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
-| --capCounts | Include this flag if you want to save processing time, at the cost of complete beta1/beta2 information. Stops counting beta reads once they exceed 2000x alpha reads (when SSE falls below 0.000)|
+| --capCounts | Include this flag if you want to save processing time, at the cost of complete beta1/beta2 information. Stops counting beta reads once they exceed 2000x alpha reads (when SSE falls below 0.000) (or when alpha = 0, stops at 2000 beta reads) |
 | -g &nbsp; \--gene | Limit the analysis to one locus, given by name matching the annotation file *eg.* '-g ENSMUSG00000024949'. (If using this parameter you must also specify the --chromosome and --maxIntronSize) |
 | -m &nbsp; \--maxIntronSize | **only required if using -g** This is the maximum intron size used in your alignment (If you're unsure, take a maximum intron size for your species *eg.* '-m 6000' for *A.thaliana* or '-m 500000' for *M.musculus*).  |
 | -I &nbsp; \--intronFilePath |  Absolute path to a .introns.tsv file output by the preCombineIntrons command.  |
@@ -271,7 +271,7 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 | ----------- | ----------- |
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
-| --capCounts | Include this flag if you want to save processing time, at the cost of complete beta1/beta2 information. Stops counting beta reads once they exceed 2000x alpha reads (when SSE falls below 0.000) |
+| --capCounts | Include this flag if you want to save processing time, at the cost of complete beta1/beta2 information. Stops counting beta reads once they exceed 2000x alpha reads (when SSE falls below 0.000) (or when alpha = 0, stops at 2000 beta reads) |
 | -g &nbsp; \--gene | Limit the analysis to one locus *eg.* '-g ENSMUSG00000024949'(only use this if you also applied the --gene parameter in the previous process step) (Default: All) |
 
 * The -1 / \--firstChrom parameter is redundant as of v0.1.3. The combine command now uses a topological sort to infer the order of genomic regions present in the input files.
