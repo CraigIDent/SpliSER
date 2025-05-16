@@ -292,7 +292,7 @@ Very similar to the output of the process command (above) , just with an extra c
 | 12 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
 | 13 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
 
-*Known issues:*  The combine step doesn't recalculate beta1 and beta2 counts if the site has already been measured. So if you don't use the preCombineIntrons command, then sometimes a site will inherit the naive distribution of beta1/beta2 counts of the original sample. These values are internal, and this issue doesn't make any difference to the final SSE value, or the alpha/beta counts used for DiffSpliSER.
+*Known issues:*  The combine step doesn't recalculate beta1 and beta2 counts if the site has already been measured. So if you don't use the preCombineIntrons command, then sometimes a site will inherit the naive definition of beta1/beta2 counts of the original sample (that doesn't account for competing sites seen in other samples). These values are internal, and this issue doesn't make any difference to the final SSE value, or the alpha/beta counts used for DiffSpliSER.
 
 <br>
 
