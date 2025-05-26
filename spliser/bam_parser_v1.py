@@ -196,12 +196,10 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,anno
 				intronSet.add((key[0], key[1], key[2], "+"))
 				if minus >0:
 					print("strand assignment was split across samples (",plus,",",minus,") for : ", key, "resolved to + strand")
-					print(plus, minus)
 			elif minus > plus:
 				intronSet.add((key[0], key[1], key[2], "-"))
 				if plus >0:
 					print("strand assignment was split across samples (",plus,",",minus,") for : ", key, "resolved to - strand")
-					print(plus, minus)
 			elif plus == minus and plus > 0:
 				intronSet.add((key[0], key[1], key[2], "+"))  # or pick '-' deterministically
 				print("strand assignment was equal across samples (",plus,",",minus,") for : ", key, "resolved to + strand")
