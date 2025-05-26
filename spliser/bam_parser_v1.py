@@ -54,11 +54,13 @@ def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter, an
 	annotationOverrideCount = 0
 	shared_introns = set(introns_plus.keys()) & set(introns_minus.keys())
 	for intron in shared_introns:
+
 		plus_count = introns_plus[intron]
 		minus_count = introns_minus[intron]
 		annotated = False
 		annotStrand = "?"
-		
+		#if intron == (16661252,16661358):
+		#	print("here",plus_count, minus_count)		
 
 		if intron in annotation:
 			#‚print(intron, annotation[intron])
@@ -141,6 +143,8 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,anno
 	else:
 		print("Annotation file: None")
 	intronSet = set()
+	intronSetPlus = Counter()
+	intronSetMinus = Counter()
 	#Find all introns for this experiment
 	for bdx,bamFile in enumerate(BAMPaths):
 		bam = pysam.AlignmentFile(bamFile, "rb")
@@ -155,7 +159,7 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,anno
 				if isStranded:
 					bamgen_plus = (read for read in bam.fetch(chrom) if check_strand(strandedType,read.flag,"+") and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
 					bamgen_minus = (read for read in bam.fetch(chrom) if check_strand(strandedType,read.flag,"-") and not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
-					introns_plus=bam.find_introns(bamgen_plus)
+					introns_plus=bam.find_introns(bamgen_plus) 
 					introns_minus=bam.find_introns(bamgen_minus)
 					if isAnnotation:
 						annotated_introns = extract_introns_from_gff(annotationFile,chrom)
@@ -169,11 +173,40 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,anno
 					bamgen=(read for read in bam.fetch(chrom) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
 					introns=bam.find_introns(bamgen)
 					Intron_info = [(introns,"?")]
-			
+				
 				for introns,strand in Intron_info:
 					for i in introns:
 						#print(i,strand)
-						intronSet.add((chrom, i[0],i[1],strand))
+						if strand =="+":
+							intronSetPlus[(chrom, i[0],i[1])]+=1
+						if strand =="-":
+							intronSetMinus[(chrom, i[0],i[1])]+=1
+						if strand =="?":
+							intronSet.add((chrom, i[0],i[1],"?"))
+
+	#Do a final round of collapsing for sites which collapsed differently in different samples
+	if isStranded:
+		print("here, stranded")
+		annotationOverrideCount = 0
+		all_keys = set(intronSetPlus.keys()) | set(intronSetMinus.keys())
+		for key in all_keys:
+			plus = intronSetPlus[key]
+			minus = intronSetMinus[key]
+			if plus > minus:
+				intronSet.add((key[0], key[1], key[2], "+"))
+				if minus >0:
+					print("strand assignment was split across samples (",plus,",",minus,") for : ", key, "resolved to + strand")
+					print(plus, minus)
+			elif minus > plus:
+				intronSet.add((key[0], key[1], key[2], "-"))
+				if plus >0:
+					print("strand assignment was split across samples (",plus,",",minus,") for : ", key, "resolved to - strand")
+					print(plus, minus)
+			elif plus == minus and plus > 0:
+				intronSet.add((key[0], key[1], key[2], "+"))  # or pick '-' deterministically
+				print("strand assignment was equal across samples (",plus,",",minus,") for : ", key, "resolved to + strand")
+				
+
 	print("Number of unique introns: ",len(intronSet))
 	intronOut = open(outputPath+".introns.tsv","w+")
 	for line in sorted(intronSet):
@@ -463,7 +496,7 @@ def parse_cigar(cigarstring):
 	return ops
 
 
-def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType, capCounts):
+def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType, capCounts, Whiteset):
 	targetPos = sSite.getPos()
 	competitors = sSite.getCompetitorPos()
 	siteStrand = sSite.getStrand()
@@ -579,7 +612,10 @@ def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType, capCounts):
 									sSite.addMutuallyExclusivePos(lSite)
 								if rSite not in sSite.getCompetitorPos():
 									sSite.addMutuallyExclusivePos(rSite)
-								SimpleBeta2_mutuallyExclusive_read = True
+								if siteChrom+"_"+str(lSite)+"_"+siteStrand in Whiteset and siteChrom+"_"+str(rSite)+"_"+siteStrand in Whiteset:
+									SimpleBeta2_mutuallyExclusive_read = True
+								#if sSite.getPos() == 513246:
+								#	print("here",lSite,rSite)
 
 			if beta1_read and compSplicing: #strandedness protected by earlier beta1_read check
 				SimpleBeta2_beta1type_read = True

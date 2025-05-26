@@ -21,8 +21,6 @@ This "version 1" release comes with performance improvements and several quality
 
 * A new pre-combine command (details below). 
 
-* A new flag (--capCounts) to stop wasting time on rare splice sites in highly expressed genes.
-
 * Duplicate introns on both strands (template switching errors), are now merged by default.
 
 * Secondary and Supplementary alignments are now ignored by default.
@@ -169,7 +167,6 @@ There are several optional parameters, which add gene annotations, flag stranded
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
-| --capCounts | Include this flag if you want to save processing time, at the cost of complete beta1/beta2 information. Stops counting beta reads once they exceed 2000x alpha reads (when SSE falls below 0.000) (or when alpha = 0, stops at 2000 beta reads) |
 | -g &nbsp; \--gene | Limit the analysis to one locus, given by name matching the annotation file *eg.* '-g ENSMUSG00000024949'. (If using this parameter you must also specify the --chromosome and --maxIntronSize) |
 | -m &nbsp; \--maxIntronSize | **only required if using -g** This is the maximum intron size used in your alignment (If you're unsure, take a maximum intron size for your species *eg.* '-m 6000' for *A.thaliana* or '-m 500000' for *M.musculus*).  |
 | -I &nbsp; \--intronFilePath |  Absolute path to a .introns.tsv file output by the preCombineIntrons command.  |
@@ -183,8 +180,6 @@ There are several optional parameters, which add gene annotations, flag stranded
 * The **chromosome** parameter allows you to restrict your analysis to a single genomic region. You'll need your input it to match however it appears in the first column of the GFF/GTF annotation file.
 
 * The **gene** parameter allows you to only assess splicing of your favourite locus, this will save you a lot of time compared to the genome-wide approach. Sometimes there are splicing events spanning across annotated gene boundaries, so you'll also need to provide a **maxIntronSize** to ensure that all splice-site strength scores for sites inside the locus are correctly calculated.
-
-* The **--capCounts** flag is designed to stop SpliSER spending most of its time counting reads for sites in exceptionally high coverage regions. In a 5 GB *Arabidopsis* BAM file: one Extensin gene can have dozens of spurious splice sites with 1 read showing usage (alpha), and 1 million+ reads showing non-usage (beta). SpliSER will spend most of its runtime processing these genes unless the --capCounts flag is invoked. (You might also get around this by pre-filtering your BAM files somehow). 
 
 <br>
 
@@ -271,12 +266,9 @@ Sample4 /path/to/Sample4.SpliSER.tsv  /path/to/bams/Sample4.bam
 | ----------- | ----------- |
 | --isStranded | Include this flag if your RNA-seq data is stranded, prevents opposite-strand reads from contributing to a site's SSE|
 | -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
-| --capCounts | Include this flag if you want to save processing time, at the cost of complete beta1/beta2 information. Stops counting beta reads once they exceed 2000x alpha reads (when SSE falls below 0.000) (or when alpha = 0, stops at 2000 beta reads) |
 | -g &nbsp; \--gene | Limit the analysis to one locus *eg.* '-g ENSMUSG00000024949'(only use this if you also applied the --gene parameter in the previous process step) (Default: All) |
 
 * The -1 / \--firstChrom parameter is redundant as of v0.1.3. The combine command now uses a topological sort to infer the order of genomic regions present in the input files.
-
-* The **--capCounts* flag is designed to stop SpliSER spending most of its time counting reads for sites in exceptionally high coverage regions. In a 5 GB *Arabidopsis* BAM file: one Extensin gene can have dozens of spurious splice sites with 1 read showing usage (alpha), and 1 million+ reads showing non-usage (beta). SpliSER will spend most of its runtime processing these genes unless the --capCounts flag is invoked. If this flag is only invoked at the *combine* step, then the early-stopping will only sites which weren't previously counted in the *process* step for a given sample.
 
 <br>
 
@@ -300,8 +292,10 @@ Very similar to the output of the process command (above) , just with an extra c
 | 12 | Partners | Positions of sites which form introns with this site, and their associated counts in this sample, in a dictionary format eg. {7863: 8, 7869: 2 } |
 | 13 | Competitors | Positions of sites which form introns with the Partners of this site, in a list format eg. [7710, 7642] |
 
-*Known issues:*  
+*Known issues if you don't use the preCombineCommand:*  
+* The combine step doesn't collapse duplicate splice sites on opposite strands, So if you don't use the preCombineIntrons command, then some sites affected by template switching will be called '+' strand in one sample, and '-' strand in another. The combine step will then treat these as two different splice sites. 
 * The combine step doesn't recalculate beta1 and beta2 counts if the site has already been measured. So if you don't use the preCombineIntrons command, then sometimes a site will inherit the naive definition of beta1/beta2 counts of the original sample (that doesn't account for competing sites seen in other samples). These beta1/beta2 values are internal, and don't make any difference to the final SSE value, or the alpha/beta counts used for DiffSpliSER.
+
 
 <br>
 

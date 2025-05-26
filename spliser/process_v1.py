@@ -29,14 +29,25 @@ def outputBedFile(outputPath,chrom_index, site2D_array,qGene):
 			outBed.write(str(site.getCompetitorPos())+"\n")
 	outBed.close()
 
-def processSites(inBAM, qChrom, isStranded, strandedType, capCounts, chrom_index, gene2D_array,site2D_array, sample = 0, numsamples = 1):
+def buildSiteWhitelist_fromSite2DArray(site2D_array,chrom_index):
+	whitelist=set()
+	#Read in the samples file and get the SpliSER.tsv file paths
+	for c in chrom_index:
+		for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
+			whitelist.add(str(c)+"_"+str(site.getPos())+"_"+str(site.getStrand()))
+	return whitelist
+
+
+def processSites(inBAM, qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array, sample = 0, numsamples = 1):
+	capCounts=False
 	print('Processing sample '+ str(int(sample)+1)+' out of '+str(numsamples))
+	Whiteset=buildSiteWhitelist_fromSite2DArray(site2D_array,chrom_index)
 	for c in chrom_index:
 		if qChrom == c or qChrom =="All":
 			print("Processing region "+str(c))
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
 				#Go assign Beta 1 type reads from BAM file
-				checkBam_pysam(inBAM, site, sample, isStranded, strandedType, capCounts)
+				checkBam_pysam(inBAM, site, sample, isStranded, strandedType, capCounts, Whiteset)
 			#Once this is done for all sites, we can calculate SSE
 			for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
 				#findBeta2Counts(site, numsamples)
@@ -48,7 +59,7 @@ def flagSiteGenes(chrom_index,site2D_array):
 		SiteGeneDex={}
 
 		for site in site2D_array[c_index]:
-			SiteGeneDex[site.getPos()]=site.getGeneName()
+			SiteGeneDex[str(site.getPos())+"_"+site.getStrand()]=site.getGeneName()
 
 		for site in site2D_array[c_index]:
 			thisGene = site.getGeneName()
@@ -56,20 +67,41 @@ def flagSiteGenes(chrom_index,site2D_array):
 			AssociatedGenes.add(thisGene)
 			#check all partner sites
 			for pSite in site.getPartners():
-				AssociatedGenes.add(pSite.getGeneName())
+				if str(pSite.getPos())+"_"+site.getStrand() in SiteGeneDex: #In rare cases might not be true where template switching co-occurs with anti-sense introns and they appear to be in competition. In which case silently skip.
+					AssociatedGenes.add(pSite.getGeneName())
+				else:
+					print("warning, skipping ",str(pSite.getPos())+"_"+site.getStrand()," for multiGeneFlagging")
 			#check all competitor sites
 			for cpos in site.getCompetitorPos():
-				AssociatedGenes.add(SiteGeneDex[cpos])
+				if str(cpos)+"_"+site.getStrand() in SiteGeneDex:
+					AssociatedGenes.add(SiteGeneDex[str(cpos)+"_"+site.getStrand()])
+				else:
+					print("warning skipping ",str(cpos)+"_"+site.getStrand()," for multiGeneFlagging") 
+
 			for mpos in site.getMutuallyExclusivePos():
-				AssociatedGenes.add(SiteGeneDex[mpos])
+				if str(mpos)+"_"+site.getStrand() in SiteGeneDex:
+					AssociatedGenes.add(SiteGeneDex[str(mpos)+"_"+site.getStrand()])
+				else:
+					print("warning skipping ",str(mpos)+"_"+site.getStrand()," for multiGeneFlagging")
+
 			#check now if we have multiple genes involved.
 			AssociatedGenes.discard('NA')
 			if len(AssociatedGenes) >1:#if there are multiple genes here
 				#print(site.getPos(),AssociatedGenes)
 				site.setMultiGeneFlag(True)
 
+def findCompetitorPos(site2D_array, chrom_index):
+	for c_index, c in enumerate(chrom_index):
+		for site in site2D_array[c_index]:
+			sPos = site.getPos()
+			for p in site.getPartners():
+				for c in p.getPartners():
+					cPos = c.getPos()
+					if cPos != sPos:
+						site.addCompetitorPos(cPos)
 
-def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, capCounts, site2D_array=[], intronFilePath = ''):
+def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, site2D_array=[], intronFilePath = ''):
+	capCounts=False
 	print('Processing')
 	if isStranded:
 		print('Stranded Analysis {}'.format(strandedType))
@@ -89,9 +121,12 @@ def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aTyp
 	print('\n\nStep 1A: Finding Splice Sites / Counting Alpha reads...')
 	chrom_index, gene2D_array, site2D_array, = findAlphaCounts_pysam(inBAM,qChrom, qGene, int(maxIntronSize), isStranded, strandedType, NA_gene, QUERY_gene=QUERY_gene,chrom_index=chrom_index, gene2D_array=gene2D_array, site2D_array=site2D_array, intronFilePath=intronFilePath, annotationFile=annotationFile) #We apply theqGene filter here, where the splice site objects are made
 	print('\n\nStep 2: Finding Beta reads')
-	if capCounts:
-		print("\t(Capping beta read counts at 2000, or when SSE >0.000)")
-	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, capCounts, chrom_index, gene2D_array,site2D_array)
+	#if capCounts:
+	#	print("\t(Capping beta read counts at 2000, or when SSE >0.000)")
+	findCompetitorPos(site2D_array,chrom_index) #Add competitors that have been observed in data so far.
+	for s in site2D_array:
+		print(s)
+	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array)
 
 	
 	if annotationFile is not None and qGene == 'All':

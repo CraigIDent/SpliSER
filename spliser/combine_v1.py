@@ -91,9 +91,83 @@ def buildGlobalCompetitorMap(samplesFile):
 	#print(GlobalCompetitors) #working
 	return GlobalPartners, GlobalCompetitors
 
-def combine(samplesFile, outputPath,qGene, isStranded, strandedType, capCounts):
-	print('Combining samples...')
+def buildGeneAssociations(samplesFile):
+	#Read in the samples file and get the SpliSER.tsv file paths
+	inPaths = []
+	for line in open(samplesFile,'r'):
+		values = line.split("\t")
+		if len(values) ==3:
+			inPaths.append(values[1]) # formerly bedPaths
 
+	Global_Genedex={}
+	#for each line in each file, add each partner for each site
+	for i in inPaths:
+		for ldx,line in enumerate(open(i,'r')):
+			if ldx >0:
+				vals=line.rstrip().split("\t")
+				site_id=vals[0]+"_"+vals[1]+"_"+vals[2]
+				site_gene=vals[3]
+				#site_partners=literal_eval(vals[10]) # should be a dictionary of partners
+				#site_others= literal_eval(vals[9])
+				#site_competitors= literal_eval(vals[11])
+				Global_Genedex[site_id]=site_gene #strongly assumes that across all samples, only one gene has been found for a given site
+
+	#print(Global_Genedex["Chr1_514105_-"])
+	return Global_Genedex
+
+def flagSiteforMultiGenes(site,partners, assocGene, Genedex):
+	chrom=site.getChromosome()
+	strand=site.getStrand()
+	thisGene=assocGene
+	partners=partners
+	competitors=site.getCompetitorPos()
+	others=site.getMutuallyExclusivePos()
+	#print(Genedex)
+	AssociatedGenes=set()
+	AssociatedGenes.add(thisGene)
+	for p in partners:
+		if str(chrom)+"_"+str(p)+"_"+strand in Genedex: #In rare cases might not be true where template switching co-occurs with anti-sense introns and they appear to be in competition. In which case silently skip.
+			AssociatedGenes.add(Genedex[str(chrom)+"_"+str(p)+"_"+strand])
+	for c in competitors:
+		if str(chrom)+"_"+str(c)+"_"+strand in Genedex:
+			AssociatedGenes.add(Genedex[str(chrom)+"_"+str(c)+"_"+strand])
+	for o in others:
+		if str(chrom)+"_"+str(o)+"_"+strand in Genedex:
+			AssociatedGenes.add(Genedex[str(chrom)+"_"+str(o)+"_"+strand])
+
+	#check now if we have multiple genes involved.
+	AssociatedGenes.discard('NA')
+	if len(AssociatedGenes) >1:#if there are multiple genes here
+		#print(site.getPos(),AssociatedGenes)
+		site.setMultiGeneFlag(True)
+
+	#if site.getPos() ==10229739:
+	#	print(partners)
+	#	print(competitors)
+	#	print(others)
+	#	print(AssociatedGenes)
+
+
+def buildSiteWhitelist_fromSamplesFile(samplesFile):
+	whitelist=set()
+	#Read in the samples file and get the SpliSER.tsv file paths
+	inPaths = []
+	for line in open(samplesFile,'r'):
+		values = line.split("\t")
+		if len(values) ==3:
+			inPaths.append(values[1]) # formerly bedPaths
+	for i in inPaths:
+		for ldx,line in enumerate(open(i,'r')):
+			if ldx >0:
+				vals=line.rstrip().split("\t")
+				site_id=vals[0]+"_"+vals[1]+"_"+vals[2]
+				whitelist.add(site_id)
+	#print(whitelist)
+	return whitelist
+
+def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
+	print('Combining samples...')
+	capCounts=False
 	outTSV = open(outputPath+".combined.tsv", 'w+')
 	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
 	#Process the input paths file
@@ -120,6 +194,16 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType, capCounts):
 	#build a global partner/competitor map 
 	print("building global competitor map...")
 	allPartners, allCompetitors = buildGlobalCompetitorMap(samplesFile) # returns a dictionary of sites (key=chrom_sitePos_strand) and their competitors (value=list of positions)
+	print("done")
+
+	#get associated genes for each splice site
+	print("finding genes associated with splice sites...")
+	Genedex = buildGeneAssociations(samplesFile) # Returns a dictionary of sites (key=chrom_sitePos_strand), pointing to genes contributing to the SSE of the site in any sample. 
+	print("done")
+
+	#Get site whitelist
+	print("building whitelist of splice sites...")
+	Whiteset = buildSiteWhitelist_fromSamplesFile(samplesFile)
 	print("done")
 
 	#initialise data structures needed for iterating along bed files
@@ -248,7 +332,9 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType, capCounts):
 				#Correct other sites which are doubled up with newly recognised partners or competitors
 				filtered_others = [x for x in sSite.getMutuallyExclusivePos() if x not in partners and x not in site_competitors]
 				sSite.setMutuallyExclusivePos(filtered_others)				
-				#Repeat the loop of samples but this time fill missing values (since competitors, partners etc are all fully filled)				
+				#Repeat the loop of samples but this time fill missing values (since competitors, partners etc are all fully filled)
+
+				#Now go calculate beta1/beta2 counts if needed
 				for idx, vals in enumerate(currentVals):
 						if vals[0] == currentChrom and int(vals[1]) == lowestPos and iterDone[idx] ==False and (isStranded==False or vals[2] == lowestPosStrand): #if this sample has values for the splice site (and if it's a stranded analysis we are looking at the same strand)
 							pass
@@ -257,8 +343,14 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType, capCounts):
 							if qGene == 'All' or qGene == assocGene:
 								filledGap = True
 								#print("checkBam",currentChrom, sSite.getPos())
-								checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType, capCounts)
+								checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType, capCounts, Whiteset)
 								sSite.setSSE(0.000,idx)
+
+
+				#Finally check the multiGeneFlag values
+				flagSiteforMultiGenes(sSite,partners, assocGene, Genedex)
+
+
 				#output lines for this splice site
 				if qGene == 'All' or qGene == assocGene:
 					outputCombinedLines(outTSV,sSite, assocGene,qGene,allTitles)
@@ -274,9 +366,9 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType, capCounts):
 	print('Filled in Beta read counts for {} Sites not detected in some samples'.format(filledCount))
 
 
-def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minReads, minSSE, strandedType, capCounts):
+def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minReads, minSSE, strandedType):
 	print('Combining samples...')
-
+	capCounts=False
 	outTSV = open(outputPath+".combined.tsv", 'w+')
 	outTSV.write("Sample\tRegion\tSite\tStrand\tGene\tSSE\talpha_count\tbeta1_count\tbeta2_count\tMultiGeneFlag\tOthers\tPartners\tCompetitors\n")
 	#Process the input paths file
