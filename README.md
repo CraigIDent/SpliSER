@@ -15,7 +15,7 @@
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
-* ~5x processing speedup (thanks to Pysam and @chenkenbio)
+* Processing speedup (thanks to Pysam and @chenkenbio)
 
 * No more regtools: measure directly from BAM files (via Pysam)
 
