@@ -7,6 +7,8 @@ version 0.1.8 (16th November 2022)
 
 <br>
 
+**An updated (faster) version with is now available on the branch 'speedups' - https://github.com/CraigIDent/SpliSER/tree/speedups**
+
 SpliSER quantifies the utilisation of splice sites across the genome. Generating a Splice-site Strength Estimate (SSE) for each individual site.
 
 SpliSER has three commands which are used in succession across an analysis: *process*, *combine*, and *output*
