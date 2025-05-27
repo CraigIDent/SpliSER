@@ -123,9 +123,7 @@ def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aTyp
 	print('\n\nStep 2: Finding Beta reads')
 	#if capCounts:
 	#	print("\t(Capping beta read counts at 2000, or when SSE >0.000)")
-	findCompetitorPos(site2D_array,chrom_index) #Add competitors that have been observed in data so far.
-	for s in site2D_array:
-		print(s)
+	findCompetitorPos(site2D_array,chrom_index) #Add competitors that have been observed in data so far.‚	
 	chrom_index, gene2D_array,site2D_array=processSites(inBAM,qChrom, isStranded, strandedType, chrom_index, gene2D_array,site2D_array)
 
 	
