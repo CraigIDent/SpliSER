@@ -65,12 +65,10 @@ def DiffSpliSER_output(samplesFile,combinedFile, outputPath, minReads, qGene):
 			outDiff.write(str(currentVals[0][1])+"\t"+str(currentVals[0][2])+"\t"+str(currentVals[0][3])+"\t"+str(currentVals[0][4])) #write the region, splice site, and gene
 			for idx, t in enumerate(allTitles):
 				t_alpha = int(currentVals[idx][6])# get alpha Values
-				t_beta = float(currentVals[idx][7])+float(currentVals[idx][8]) # add beta1 and beta2Simple
+				t_beta = int(currentVals[idx][7])+int(currentVals[idx][8]) # add beta1 and beta2Simple
 				t_SSE = float(currentVals[idx][5])
 				if t_alpha+t_beta >= minReads: # if this sample passes the minimum read count for this site
-
-					t_beta = t_beta+t_WeightedCrypticBeta
-					outDiff.write("\t"+str(t_alpha)+"\t"+"{0:.2f}".format(t_beta)+"\t"+"{0:.2f}".format(t_SSE))
+					outDiff.write("\t"+str(t_alpha)+"\t"+str(t_beta)+"\t"+"{0:.3f}".format(t_SSE))
 				else:
 					outDiff.write("\tNA\tNA\tNA")
 			outDiff.write("\n")
@@ -116,7 +114,7 @@ def GWAS_output(samplesFile,combinedFile, outputPath, minReads, qGene, minSample
 				filtered = open(str(outputPath+currentGene+"_"+currentSite+"_filtered.log"),'w+') # otherwise write into a filter log file specific for this gene
 				for idx, t in enumerate(allTitles):
 					t_alpha = int(currentVals[idx][6])# get alpha Values
-					t_beta = float(currentVals[idx][7])+float(currentVals[idx][8]) # add beta1 and beta2Simple values
+					t_beta = int(currentVals[idx][7])+int(currentVals[idx][8]) # add beta1 and beta2Simple values
 					if t_alpha+t_beta >= minReads: # if this sample passes the minimum read count for this site
 						samplesPassing +=1
 						bufferString = bufferString+str(currentVals[idx][0])+"\t"+str(currentVals[idx][5])+"\n" #store sample name and SSE in buffer

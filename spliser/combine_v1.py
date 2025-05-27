@@ -394,6 +394,16 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 	allPartners, allCompetitors = buildGlobalCompetitorMap(samplesFile) # returns a dictionary of sites (key=chrom_sitePos_strand) and their competitors (value=list of positions)
 	print("done")
 
+	#get associated genes for each splice site
+	print("finding genes associated with splice sites...")
+	Genedex = buildGeneAssociations(samplesFile) # Returns a dictionary of sites (key=chrom_sitePos_strand), pointing to genes contributing to the SSE of the site in any sample. 
+	print("done")
+
+	#Get site whitelist
+	print("building whitelist of splice sites...")
+	Whiteset = buildSiteWhitelist_fromSamplesFile(samplesFile)
+	print("done")
+
 	print('Reading SpliSER processed files into memory')
 	if capCounts:
 		print("\t(Capping beta read counts at 2000, or when SSE >0.000)")
@@ -596,7 +606,7 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 								#Issue, will calculate beta1 and beta2 before partners and competitors have been found from other samples. Leading to assymetry and incorrect values
 								if qGene == 'All' or qGene == assocGene:
 									filledGap = True
-									checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType, capCounts)
+									checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType,capCounts, Whiteset)
 									sSite.setSSE(0.000,idx)
 								#output lines for this splice site
 						if qGene == 'All' or qGene == assocGene:

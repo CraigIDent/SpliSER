@@ -12,6 +12,9 @@ options(scipen=6)
 
 Load Libraries
 ```{r}
+#install.packages("BiocManager")
+#BiocManager::install("edgeR")
+#install.packages("tidyverse")
 library(edgeR)
 library(dplyr)
 library(tidyr)
@@ -114,7 +117,9 @@ drops<- c("logFC","logCPM","LR", "meanSSE")
 hits_intersect <- hits_intersect[ , !(names(hits_intersect) %in% drops)]
 
 #CURRENTLY THIS SECTION NEEDS TO BE UPDATED WITH YOUR NAMES (eg $Sample1Rep1_SSE)
+#Condition 1 average (ie all of your control samples) - remember to update the denominator if you have more/less than 3 replicates
 hits_intersect$avg1 = (hits_intersect$ColA_SSE + hits_intersect$ColB_SSE +hits_intersect$ColC_SSE)/3
+#Condition 2 average (ie all of your test samples) - remember to update the denominator if you have more/less than 3 replicates
 hits_intersect$avg2 = (hits_intersect$sc35.sclA_SSE + hits_intersect$sc35.sclB_SSE +hits_intersect$sc35.sclC_SSE)/3
 hits_intersect$dSSE = hits_intersect$avg2 - hits_intersect$avg1
 hits_intersect
