@@ -100,8 +100,21 @@ def findCompetitorPos(site2D_array, chrom_index):
 					if cPos != sPos:
 						site.addCompetitorPos(cPos)
 
-def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, site2D_array=[], intronFilePath = ''):
+def process(inBAM, outputPath, qGene, qChrom, maxIntronSize, annotationFile,aType, isStranded, strandedType, intronFilePath = ''):
 	capCounts=False
+	site2D_array=[]
+	chrom_index=[]
+	gene2D_array=[]
+	NA_gene = Gene(chromosome = None,
+					name = 'NA',
+					leftPos = -1,
+					rightPos = -1,
+					readNums = None,
+					samples = 1,
+					strand = None,
+					source = '')
+	QUERY_gene=None
+
 	print('Processing')
 	if isStranded:
 		print('Stranded Analysis {}'.format(strandedType))

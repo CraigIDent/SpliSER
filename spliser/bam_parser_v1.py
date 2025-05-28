@@ -40,7 +40,7 @@ def check_strand(strandedType, SAMflag, siteStrand):
 
 #Takes a Counter of plus and minus strand introns <(start,end): count> and collapses duplicates where there is a bias towards one or the other
 #Also takes a Dictionary of annotated introns <(start, end): strand> and uses this in preference
-def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter, annotation={}):
+def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter, annotation={},chrom="?"):
 	# Create a copy to avoid modifying inputs directly
 	introns_plus = introns_plus.copy()
 	introns_minus = introns_minus.copy()
@@ -84,8 +84,8 @@ def collapse_duplicate_introns(introns_plus: Counter, introns_minus: Counter, an
 			del introns_plus[intron]
 
 	if isAnnotation:
-		print("used annotation to determine strand of "+str(annotationOverrideCount)+" duplicate introns on opposite strands")
-	print("used majority rule to resolve "+str(len(shared_introns)-annotationOverrideCount)+" duplicate introns on opposite strands")
+		print(str(chrom)+" used annotation to determine strand of "+str(annotationOverrideCount)+" duplicate introns on opposite strands")
+	print(str(chrom)+" used majority rule to resolve "+str(len(shared_introns)-annotationOverrideCount)+" duplicate introns on opposite strands")
 
 	return introns_plus, introns_minus
 
@@ -165,9 +165,9 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,anno
 						annotated_introns = extract_introns_from_gff(annotationFile,chrom)
 					if not dontCollapse:
 						if isAnnotation:
-						   introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns)
+						   introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns, chrom=chrom)
 						else: 
-							introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus)
+							introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,chrom=chrom)
 					Intron_info =[(introns_plus,"+"),(introns_minus,"-")]
 				else:
 					bamgen=(read for read in bam.fetch(chrom) if not read.is_unmapped and not read.is_secondary and not read.is_supplementary)
@@ -324,9 +324,9 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
 				if not dontCollapse:
 					#print(chrom, "Collapsing duplicate introns to the majority strand..")
 					if isAnnotation:
-						introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns)
+						introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns,chrom=chrom)
 					else:
-						introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus)
+						introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,chrom=chrom)
 				Intron_info =[(introns_plus,"+"),(introns_minus,"-")]
 				if intronFilePath != '': # if we are adding some additional introns from file
 					#print(additionalIntrons_plus[chrom])

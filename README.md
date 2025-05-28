@@ -11,7 +11,7 @@
 <br>
 <br>
 
-**version 1.0 (27th May 2025)**
+**version 1.0.1 (28th May 2025)**
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
@@ -397,7 +397,12 @@ Here is the basic layout of the 'target' file:
 | 3 | **Library_size** - This is the number of mapped reads in your bam files for these samples. This is used for read count normalisation. You can get this by calling *samtools flagstat <your.bam>*|
 | 4 | **Description** - A column where you can make any notes you want, you can also leave these entries blank with empty quotation marks ("").
 
+<br>  
+<br>  
 
+*changelog:*
+	*v1.0.1: Fixed: Crash when annotation file is not provided, now properly initialising default parameters. Added: Chromosome name reported in duplicate intron counts.
+	
 <br>  
 <br>  
 
