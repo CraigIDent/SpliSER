@@ -34,7 +34,7 @@ def buildSiteWhitelist_fromSite2DArray(site2D_array,chrom_index):
 	#Read in the samples file and get the SpliSER.tsv file paths
 	for c in chrom_index:
 		for idx, site in enumerate(site2D_array[chrom_index.index(c)]):
-			whitelist.add(str(c)+"_"+str(site.getPos())+"_"+str(site.getStrand()))
+			whitelist.add(str(c)+"§"+str(site.getPos())+"§"+str(site.getStrand()))
 	return whitelist
 
 
@@ -59,7 +59,7 @@ def flagSiteGenes(chrom_index,site2D_array):
 		SiteGeneDex={}
 
 		for site in site2D_array[c_index]:
-			SiteGeneDex[str(site.getPos())+"_"+site.getStrand()]=site.getGeneName()
+			SiteGeneDex[str(site.getPos())+"§"+site.getStrand()]=site.getGeneName()
 
 		for site in site2D_array[c_index]:
 			thisGene = site.getGeneName()
@@ -67,20 +67,20 @@ def flagSiteGenes(chrom_index,site2D_array):
 			AssociatedGenes.add(thisGene)
 			#check all partner sites
 			for pSite in site.getPartners():
-				if str(pSite.getPos())+"_"+site.getStrand() in SiteGeneDex: #In rare cases might not be true where template switching co-occurs with anti-sense introns and they appear to be in competition. In which case silently skip.
+				if str(pSite.getPos())+"§"+site.getStrand() in SiteGeneDex: #In rare cases might not be true where template switching co-occurs with anti-sense introns and they appear to be in competition. In which case silently skip.
 					AssociatedGenes.add(pSite.getGeneName())
 				else:
 					print("warning, skipping ",str(pSite.getPos())+"_"+site.getStrand()," for multiGeneFlagging")
 			#check all competitor sites
 			for cpos in site.getCompetitorPos():
-				if str(cpos)+"_"+site.getStrand() in SiteGeneDex:
-					AssociatedGenes.add(SiteGeneDex[str(cpos)+"_"+site.getStrand()])
+				if str(cpos)+"§"+site.getStrand() in SiteGeneDex:
+					AssociatedGenes.add(SiteGeneDex[str(cpos)+"§"+site.getStrand()])
 				else:
 					print("warning skipping ",str(cpos)+"_"+site.getStrand()," for multiGeneFlagging") 
 
 			for mpos in site.getMutuallyExclusivePos():
-				if str(mpos)+"_"+site.getStrand() in SiteGeneDex:
-					AssociatedGenes.add(SiteGeneDex[str(mpos)+"_"+site.getStrand()])
+				if str(mpos)+"§"+site.getStrand() in SiteGeneDex:
+					AssociatedGenes.add(SiteGeneDex[str(mpos)+"§"+site.getStrand()])
 				else:
 					print("warning skipping ",str(mpos)+"_"+site.getStrand()," for multiGeneFlagging")
 

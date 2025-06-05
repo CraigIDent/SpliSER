@@ -610,7 +610,7 @@ def checkBam_pysam(bamFile, sSite, sample, isStranded, strandedType, capCounts, 
 									sSite.addMutuallyExclusivePos(lSite)
 								if rSite not in sSite.getCompetitorPos():
 									sSite.addMutuallyExclusivePos(rSite)
-								if siteChrom+"_"+str(lSite)+"_"+siteStrand in Whiteset and siteChrom+"_"+str(rSite)+"_"+siteStrand in Whiteset:
+								if siteChrom+"§"+str(lSite)+"§"+siteStrand in Whiteset and siteChrom+"§"+str(rSite)+"§"+siteStrand in Whiteset:
 									SimpleBeta2_mutuallyExclusive_read = True
 								#if sSite.getPos() == 513246:
 								#	print("here",lSite,rSite)

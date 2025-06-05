@@ -11,7 +11,7 @@
 <br>
 <br>
 
-**version 1.0.1 (28th May 2025)**
+**version 1.0.2 (5th June 2025)**
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
@@ -400,9 +400,12 @@ Here is the basic layout of the 'target' file:
 <br>  
 <br>  
 
-*changelog:*
-	*v1.0.1: Fixed: Crash when annotation file is not provided, now properly initialising default parameters. Added: Chromosome name reported in duplicate intron counts.
-	
+### Changelog
+- **v1.0.2**
+  - Fixed: Crash when chromosome/region names include underscores. Internal logic now uses § symbol as separator. 
+- v1.0.1
+  - Fixed: Crash when annotation file is not provided; now properly initializes default parameters.
+  - Added: Chromosome name is now reported in duplicate intron counts log.
 <br>  
 <br>  
 

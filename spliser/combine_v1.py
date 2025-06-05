@@ -69,10 +69,10 @@ def buildGlobalCompetitorMap(samplesFile):
 		for ldx,line in enumerate(open(i,'r')):
 			if ldx >0:
 				vals=line.rstrip().split("\t")
-				site_id=vals[0]+"_"+vals[1]+"_"+vals[2]
+				site_id=vals[0]+"§"+vals[1]+"§"+vals[2]
 				site_partners=literal_eval(vals[10]) # should be a dictionary of partners
 				for p in site_partners:
-					p_id=vals[0]+"_"+str(p)+"_"+vals[2] #Assumes the same strand
+					p_id=vals[0]+"§"+str(p)+"§"+vals[2] #Assumes the same strand
 					if site_id not in GlobalPartners:
 						GlobalPartners[site_id] = set()
 					GlobalPartners[site_id].add(p_id)
@@ -86,7 +86,7 @@ def buildGlobalCompetitorMap(samplesFile):
 		for p in partners:
 			for c in GlobalPartners[p]:
 				if c != site:
-					competitors.add(c.split("_")[1]) # get the competitor positions
+					competitors.add(c.split("§")[1]) # get the competitor positions
 		GlobalCompetitors[site] = sorted(list(competitors))
 	#print(GlobalCompetitors) #working
 	return GlobalPartners, GlobalCompetitors
@@ -105,7 +105,7 @@ def buildGeneAssociations(samplesFile):
 		for ldx,line in enumerate(open(i,'r')):
 			if ldx >0:
 				vals=line.rstrip().split("\t")
-				site_id=vals[0]+"_"+vals[1]+"_"+vals[2]
+				site_id=vals[0]+"§"+vals[1]+"§"+vals[2]
 				site_gene=vals[3]
 				#site_partners=literal_eval(vals[10]) # should be a dictionary of partners
 				#site_others= literal_eval(vals[9])
@@ -126,14 +126,14 @@ def flagSiteforMultiGenes(site,partners, assocGene, Genedex):
 	AssociatedGenes=set()
 	AssociatedGenes.add(thisGene)
 	for p in partners:
-		if str(chrom)+"_"+str(p)+"_"+strand in Genedex: #In rare cases might not be true where template switching co-occurs with anti-sense introns and they appear to be in competition. In which case silently skip.
-			AssociatedGenes.add(Genedex[str(chrom)+"_"+str(p)+"_"+strand])
+		if str(chrom)+"§"+str(p)+"§"+strand in Genedex: #In rare cases might not be true where template switching co-occurs with anti-sense introns and they appear to be in competition. In which case silently skip.
+			AssociatedGenes.add(Genedex[str(chrom)+"§"+str(p)+"§"+strand])
 	for c in competitors:
-		if str(chrom)+"_"+str(c)+"_"+strand in Genedex:
-			AssociatedGenes.add(Genedex[str(chrom)+"_"+str(c)+"_"+strand])
+		if str(chrom)+"§"+str(c)+"§"+strand in Genedex:
+			AssociatedGenes.add(Genedex[str(chrom)+"§"+str(c)+"§"+strand])
 	for o in others:
-		if str(chrom)+"_"+str(o)+"_"+strand in Genedex:
-			AssociatedGenes.add(Genedex[str(chrom)+"_"+str(o)+"_"+strand])
+		if str(chrom)+"§"+str(o)+"§"+strand in Genedex:
+			AssociatedGenes.add(Genedex[str(chrom)+"§"+str(o)+"§"+strand])
 
 	#check now if we have multiple genes involved.
 	AssociatedGenes.discard('NA')
@@ -160,7 +160,7 @@ def buildSiteWhitelist_fromSamplesFile(samplesFile):
 		for ldx,line in enumerate(open(i,'r')):
 			if ldx >0:
 				vals=line.rstrip().split("\t")
-				site_id=vals[0]+"_"+vals[1]+"_"+vals[2]
+				site_id=vals[0]+"§"+vals[1]+"§"+vals[2]
 				whitelist.add(site_id)
 	#print(whitelist)
 	return whitelist
@@ -266,7 +266,6 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 						lowestPos = int(pos)
 						lowestPosStrand = strand
 						assocGene = currentVals[idx][3]
-
 		#if we didn't exhaust all iterators at the start of this loop
 		if not(len(set(iterDone)) <=1 and iterDone[0] ==True):
 			#Create a Splice Site for lowestPos
@@ -294,7 +293,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 							sSite.addAlphaCount(int(vals[5]), idx) # add alpha Counts
 							sSite.addBeta1Count(int(vals[6]), idx) # add beta1 Counts
 							sSite.addBeta2SimpleCount(int(vals[7]), idx) # add beta2Simple Counts
-
+							#print(BAMPaths[idx],sSite.getPos())
 							#Only update multiGeneFlag with True values (so that the flag isn't just determned by the final sample we look at)
 							if not sSite.getMultiGeneFlag():
 								sSite.setMultiGeneFlag(eval(str(vals[8])))
@@ -323,8 +322,12 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 				#Here we still haven't updated all of the competitor associations given all of the now-known partners can competitors from different samples
 				#ie in sample 1, A partners only with C, in sample 2: only B partners with C... we need to inform the site that A and C are now in competition.
 				#Find competitorPositions of each site
-				site_competitors = allCompetitors[str(sSite.getChromosome())+"_"+str(sSite.getPos())+"_"+str(sSite.getStrand())]
+				site_competitors = allCompetitors[str(sSite.getChromosome())+"§"+str(sSite.getPos())+"§"+str(sSite.getStrand())]
+				#print(str(sSite.getChromosome())+"_"+str(sSite.getPos())+"_"+str(sSite.getStrand()))
+				#print(site_competitors)
+				#Assumes no underscores in Chromosome names
 				site_competitors = [int(x) for x in site_competitors]
+
 				for c in site_competitors:
 					sSite.addCompetitorPos(c)
 				
@@ -343,6 +346,7 @@ def combine(samplesFile, outputPath,qGene, isStranded, strandedType):
 							if qGene == 'All' or qGene == assocGene:
 								filledGap = True
 								#print("checkBam",currentChrom, sSite.getPos())
+								#print(BAMPaths[idx],sSite.getPos())
 								checkBam_pysam(BAMPaths[idx], sSite, idx, isStranded, strandedType, capCounts, Whiteset)
 								sSite.setSSE(0.000,idx)
 
@@ -589,7 +593,7 @@ def combineShallow(samplesFile, outputPath, qGene, isStranded, minSamples, minRe
 						#Here we still haven't updated all of the competitor associations given all of the now-known partners can competitors from different samples
 						#ie in sample 1, A partners only with C, in sample 2: only B partners with C... we need to inform the site that A and C are now in competition.
 						#Find competitorPositions of each site
-						site_competitors = allCompetitors[str(sSite.getChromosome())+"_"+str(sSite.getPos())+"_"+str(sSite.getStrand())]
+						site_competitors = allCompetitors[str(sSite.getChromosome())+"§"+str(sSite.getPos())+"§"+str(sSite.getStrand())]
 						site_competitors = [int(x) for x in site_competitors]
 						for c in site_competitors:
 							sSite.addCompetitorPos(c)
