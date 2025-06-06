@@ -82,7 +82,7 @@ You can catch a lot of issues with strandedness and annotation this way.
 Clone the SpliSER repository:
 
 ```bash
-git clone https://github.com/CraigIDent/SpliSER.git #or otherwise download it from Github
+git clone --branch speedups https://github.com/CraigIDent/SpliSER.git #or otherwise download it from Github
 cd SpliSER
 pip install .
 #Check installation
