@@ -1,8 +1,8 @@
 """
 SpliSER- Splice-site Strength Estimation from RNA-seq
 """
-#Version 1.0.2 - 5th June 2025
-version = "v1.0.2"
+#Version 1.0.3 - 11th July 2025
+version = "v1.0.3"
 
 import sys
 import timeit
