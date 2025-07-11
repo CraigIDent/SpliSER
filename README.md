@@ -11,7 +11,7 @@
 <br>
 <br>
 
-**version 1.0.2 (5th June 2025)**
+**version 1.0.3 (11th July 2025)**
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
@@ -401,7 +401,9 @@ Here is the basic layout of the 'target' file:
 <br>  
 
 ### Changelog
-- **v1.0.2**
+- **v1.0.3**
+  - Improved: During the process step, for a given intron, if the provided (precombined) introns file shows a matching intron on the opposite strand, then the observed strand of that intron in this sample will be corrected to match. (Occurred with low coverage, template-switched introns).
+- v1.0.2
   - Fixed: Crash when chromosome/region names include underscores. Internal logic now uses § symbol as separator. 
 - v1.0.1
   - Fixed: Crash when annotation file is not provided; now properly initializes default parameters.

@@ -186,7 +186,7 @@ def preCombineIntrons(BAMPathList,outputPath,qChrom,isStranded,strandedType,anno
 
 	#Do a final round of collapsing for sites which collapsed differently in different samples
 	if isStranded:
-		print("here, stranded")
+		#print("here, stranded")
 		annotationOverrideCount = 0
 		all_keys = set(intronSetPlus.keys()) | set(intronSetMinus.keys())
 		for key in all_keys:
@@ -327,7 +327,34 @@ def findAlphaCounts_pysam(bamFile, qChrom, qGene, maxIntronSize, isStranded,stra
 						introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,annotated_introns,chrom=chrom)
 					else:
 						introns_plus, introns_minus = collapse_duplicate_introns(introns_plus,introns_minus,chrom=chrom)
+
+				# Check for strand mismatches in this sample relative to the preCombinedIntron file (if it exists) and correct them
+				if intronFilePath != '':
+					strand_corrections = 0
+				
+					# Check if plus strand introns exist in preCombined as minus strand
+					for intron_pos in list(introns_plus.keys()):
+						if intron_pos in additionalIntrons_minus[chrom]:
+							# Move intron from plus to minus
+							intron_count = introns_plus.pop(intron_pos)
+							introns_minus[intron_pos] = intron_count
+							strand_corrections += 1
+							print(f"Strand correction: {chrom}:{intron_pos[0]}-{intron_pos[1]} from + to -")
+				
+					# Check if minus strand introns exist in preCombined as plus strand
+					for intron_pos in list(introns_minus.keys()):
+						if intron_pos in additionalIntrons_plus[chrom]:
+							# Move intron from minus to plus
+							intron_count = introns_minus.pop(intron_pos)
+							introns_plus[intron_pos] = intron_count
+							strand_corrections += 1
+							print(f"Strand correction: {chrom}:{intron_pos[0]}-{intron_pos[1]} from - to +")
+				
+					if strand_corrections > 0:
+						print(f"Total strand corrections in {chrom}: {strand_corrections}")
+				#Store introns for later counting
 				Intron_info =[(introns_plus,"+"),(introns_minus,"-")]
+
 				if intronFilePath != '': # if we are adding some additional introns from file
 					#print(additionalIntrons_plus[chrom])
 					#print({name: 0 for name in additionalIntrons_plus[chrom] if name not in introns_plus})
