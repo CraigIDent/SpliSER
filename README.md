@@ -11,7 +11,7 @@
 <br>
 <br>
 
-**version 1.0.3 (11th July 2025)**
+**version 1.0.4 (22nd July 2025)**
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
@@ -115,6 +115,9 @@ The * preCombineIntrons* command requires the following two input parameters:
 | -s &nbsp; \--strandedType | REQUIRED IF USING --isStranded. Strand specificity of RNA library preparation, where \"rf\" is first-strand/RF and \"fr\" is second-strand/FR.|
 | -A &nbsp;    \--annotationFile | The path to a GFF or GTF file matching the genome to which your RNA-seq data was aligned. When used with --isStranded, providing this file can improve the accuracy of strand calling.  |
 | -c &nbsp;    \--chromosome | Limit the analysis to one chromosome/scaffold, given by name matching the annotation file *eg.* '-c Chr1'. **required if using -g** |
+
+* For successful intron calling the **annotationFile** needs to be a gff/gtf file with 'exon' features that have either a 'Parent' or 'transcript_id' attribute indicating which transcript they belong to.
+
 <br>
 
 ### result
@@ -180,6 +183,8 @@ There are several optional parameters, which add gene annotations, flag stranded
 * The **chromosome** parameter allows you to restrict your analysis to a single genomic region. You'll need your input it to match however it appears in the first column of the GFF/GTF annotation file.
 
 * The **gene** parameter allows you to only assess splicing of your favourite locus, this will save you a lot of time compared to the genome-wide approach. Sometimes there are splicing events spanning across annotated gene boundaries, so you'll also need to provide a **maxIntronSize** to ensure that all splice-site strength scores for sites inside the locus are correctly calculated.
+
+* For successful intron calling the **annotationFile** needs to be a gff/gtf file with 'exon' features that have either a 'Parent' or 'transcript_id' attribute indicating which transcript they belong to.
 
 <br>
 
@@ -401,7 +406,9 @@ Here is the basic layout of the 'target' file:
 <br>  
 
 ### Changelog
-- **v1.0.3**
+- **v1.0.4**
+  - Fixed: Annotation file is now only accessed once per command, stopping prohibitive run times for large annotation files. When reading annotation files, the GTF-style 'transcript_id' is now accepted as alongside GFF-style 'Parent' to indicate which transcript an exon belongs to. 
+- v1.0.3
   - Improved: During the process step, for a given intron, if the provided (precombined) introns file shows a matching intron on the opposite strand, then the observed strand of that intron in this sample will be corrected to match. (Occurred with low coverage, template-switched introns).
 - v1.0.2
   - Fixed: Crash when chromosome/region names include underscores. Internal logic now uses § symbol as separator. 
