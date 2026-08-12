@@ -19,6 +19,7 @@ class Gene:
 		self.source = str(source)
 		self.sites = []
 		self.strand = str(strand)
+		self.maxRightBefore = None
 
     #Operators for genes
 	def __lt__(self, other):
@@ -73,6 +74,12 @@ class Gene:
 
 	def popSite(self):
 		return self.sites.pop()
+
+	def setMaxRightBefore(self, value):
+		self.maxRightBefore = value
+
+	def getMaxRightBefore(self):
+		return self.maxRightBefore
 
 
 #	def addJunction(self, j):

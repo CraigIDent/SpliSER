@@ -1,54 +1,49 @@
 # binary_searches.py
 
+# Binary search for an insertion point into the array of genes, followed by (bounded) interval scan
 def binary_gene_search(array, pos, strand, isStranded):
-	'''
-	Take an array and search for a Gene within it whose left and right bounds contain the given genomic position.
-	Return its position within the Array. Otherwise return -1.
 
-	If the search fails (e.g. overlapping genes not perfectly sorted), also checks three elements either side.
-	'''
-	length = int(len(array))
-	if length == 0:
-		return int(-1)
+	pos = int(pos)
 
-	idx = length // 2
-	past_max = length
-	past_min = 0
-	last_idx = -1
-	new_idx = idx
-	stuck = False
-	found = False
-	while stuck == False and found == False:
-		if int(pos) >= int(array[idx].getLeftPos()) and int(pos) <= int(array[idx].getRightPos()) and (strand == array[idx].getStrand() or isStranded==False or (strand != '+' and strand != '-')):
-			found = True
-			break
-		elif int(pos) >= int(array[idx].getRightPos()):
-			new_idx = idx + ((past_max-idx)//2)
-			past_min = idx
-		elif int(pos) <= int(array[idx].getLeftPos()):
-			new_idx = idx - ((idx-past_min)//2)
-			past_max = idx
-			if idx == 1:
-				new_idx = 0
+	if len(array) == 0:
+		return -1
 
-		if idx != last_idx:
-			last_idx = idx
-			idx = new_idx
+	# Find rightmost gene whose start is <= pos
+	low = 0
+	high = len(array) - 1
+	idx = -1
+
+	while low <= high:
+		mid = (low + high) // 2
+
+		if int(array[mid].getLeftPos()) <= pos:
+			idx = mid
+			low = mid + 1
 		else:
-			stuck = True
+			high = mid - 1
 
-	if found == False and stuck == True:
-		for i in range(-3, 3):
-			if idx+i >= 0 and idx+i < len(array)-1 and int(pos) >= int(array[idx+i].getLeftPos()) and int(pos) <= int(array[idx+i].getRightPos()):
-				if strand == array[idx+i].getStrand() or isStranded==False or (strand != '+' and strand != '-'):
-					found = True
-					stuck = False
-					idx = idx+i
+	if idx == -1:
+		return -1
 
-	if found == True and stuck == False:
-		return int(idx)
-	else:
-		return int(-1)
+	# Check every earlier interval that could potentially contain pos
+	for i in range(idx, -1, -1):
+	
+		gene = array[i]
+	
+		# Nothing at i or earlier can reach pos
+		if gene.getMaxRightBefore() < pos:
+			break
+	
+		strand_match = (
+			not isStranded
+			or strand not in ("+", "-")
+			or strand == gene.getStrand()
+		)
+	
+		if (int(gene.getLeftPos()) <= pos <= int(gene.getRightPos()) and strand_match):
+			return i
+
+	return -1
 
 
 def binary_site_search(array, pos, strand, isStranded):
