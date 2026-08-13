@@ -11,7 +11,7 @@
 <br>
 <br>
 
-**version 1.0.4 (22nd July 2025)**
+**version 1.0.5 (12th August 2026)**
 
 This "version 1" release comes with performance improvements and several quality-of-life updates:
 
@@ -398,7 +398,7 @@ Here is the basic layout of the 'target' file:
 | Column | content |
 | --- | --- |
 | 1 | **Sample** - this can be whatever you like, so long as it uniquely identifies each sample. These should be in the same order as the samples appear in your SpliSER output. |
-| 2 | **Group** - Each sample should belong to one of two groups, you can call the groups whatver you like.  |
+| 2 | **Group** - Each sample should belong to one of two groups, you can call the groups whatever you like.  |
 | 3 | **Library_size** - This is the number of mapped reads in your bam files for these samples. This is used for read count normalisation. You can get this by calling *samtools flagstat <your.bam>*|
 | 4 | **Description** - A column where you can make any notes you want, you can also leave these entries blank with empty quotation marks ("").
 
@@ -406,6 +406,8 @@ Here is the basic layout of the 'target' file:
 <br>  
 
 ### Changelog
+- **v1.0.5**
+  - Fixed: Fixed: Binary search to assign genes to splice sites was failing for regions with many overlapping transcripts. Changed to make the binary search find the rightmost possible gene, and then perform a backwards scan to find the correct annotation (if any). 
 - **v1.0.4**
   - Fixed: Annotation file is now only accessed once per command, stopping prohibitive run times for large annotation files. When reading annotation files, the GTF-style 'transcript_id' is now accepted as alongside GFF-style 'Parent' to indicate which transcript an exon belongs to. 
 - v1.0.3
